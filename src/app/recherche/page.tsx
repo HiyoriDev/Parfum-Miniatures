@@ -12,6 +12,8 @@ import MiniatureCard from "../../components/MiniatureCard";
 
 import { supabase } from "../../../lib/supabase";
 
+export const dynamic = "force-dynamic";
+
 export default function RecherchePage() {
   const router = useRouter();
 
