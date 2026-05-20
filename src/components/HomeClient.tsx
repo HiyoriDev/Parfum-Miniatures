@@ -4,9 +4,9 @@ import Header from "./Header";
 import Footer from "./Footer";
 import Spacer from "./Spacer";
 
-import { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 
 import MiniatureCard from "./MiniatureCard";
 
@@ -25,11 +25,37 @@ export default function HomeClient({ perfumes }: { perfumes: Perfume[] }) {
 
   const searchParams = useSearchParams();
 
-  const router = useRouter();
+  const [currentPage, setCurrentPage] = useState(
+    Number(searchParams.get("page") || "1"),
+  );
 
-  const currentPage = Number(searchParams.get("page") || "1");
+  const [selectedLetter, setSelectedLetter] = useState(
+    searchParams.get("letter") || "Tous",
+  );
 
-  const selectedLetter = searchParams.get("letter") || "Tous";
+  useEffect(() => {
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+
+      setCurrentPage(Number(params.get("page") || "1"));
+
+      setSelectedLetter(params.get("letter") || "Tous");
+    };
+
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+
+    setCurrentPage(Number(params.get("page") || "1"));
+
+    setSelectedLetter(params.get("letter") || "Tous");
+  }, [searchParams]);
 
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
@@ -57,7 +83,11 @@ export default function HomeClient({ perfumes }: { perfumes: Perfume[] }) {
   );
 
   const changeLetter = (letter: string) => {
-    router.push(`/?page=1&letter=${letter}`);
+    setSelectedLetter(letter);
+
+    setCurrentPage(1);
+
+    window.history.pushState({}, "", `/?page=1&letter=${letter}`);
   };
 
   return (
@@ -130,11 +160,17 @@ export default function HomeClient({ perfumes }: { perfumes: Perfume[] }) {
         <div className="flex justify-center items-center gap-2 mt-12 flex-wrap">
           {/* PRECEDENT */}
           <button
-            onClick={() =>
-              router.push(
-                `/?page=${Math.max(currentPage - 1, 1)}&letter=${selectedLetter}`,
-              )
-            }
+            onClick={() => {
+              const newPage = Math.max(currentPage - 1, 1);
+
+              setCurrentPage(newPage);
+
+              window.history.pushState(
+                {},
+                "",
+                `/?page=${newPage}&letter=${selectedLetter}`,
+              );
+            }}
             className="px-4 py-2 rounded-xl bg-[var(--surface)] text-[var(--texte)] border border-black/5 hover:bg-[var(--accent)] transition-all cursor-pointer"
           >
             ←
@@ -142,7 +178,15 @@ export default function HomeClient({ perfumes }: { perfumes: Perfume[] }) {
 
           {/* PAGE 1 */}
           <button
-            onClick={() => router.push(`/?page=1&letter=${selectedLetter}`)}
+            onClick={() => {
+              setCurrentPage(1);
+
+              window.history.pushState(
+                {},
+                "",
+                `/?page=1&letter=${selectedLetter}`,
+              );
+            }}
             className={`px-4 py-2 rounded-xl border border-black/5 transition-all cursor-pointer ${
               currentPage === 1
                 ? "bg-[var(--texte)] text-[var(--fond)]"
@@ -169,9 +213,15 @@ export default function HomeClient({ perfumes }: { perfumes: Perfume[] }) {
             .map((page) => (
               <button
                 key={page}
-                onClick={() =>
-                  router.push(`/?page=${page}&letter=${selectedLetter}`)
-                }
+                onClick={() => {
+                  setCurrentPage(page);
+
+                  window.history.pushState(
+                    {},
+                    "",
+                    `/?page=${page}&letter=${selectedLetter}`,
+                  );
+                }}
                 className={`px-4 py-2 rounded-xl border border-black/5 transition-all cursor-pointer ${
                   currentPage === page
                     ? "bg-[var(--texte)] text-[var(--fond)]"
@@ -190,9 +240,15 @@ export default function HomeClient({ perfumes }: { perfumes: Perfume[] }) {
           {/* DERNIERE PAGE */}
           {totalPages > 1 && (
             <button
-              onClick={() =>
-                router.push(`/?page=${totalPages}&letter=${selectedLetter}`)
-              }
+              onClick={() => {
+                setCurrentPage(totalPages);
+
+                window.history.pushState(
+                  {},
+                  "",
+                  `/?page=${totalPages}&letter=${selectedLetter}`,
+                );
+              }}
               className={`px-4 py-2 rounded-xl border border-black/5 transition-all cursor-pointer ${
                 currentPage === totalPages
                   ? "bg-[var(--texte)] text-[var(--fond)]"
@@ -205,11 +261,17 @@ export default function HomeClient({ perfumes }: { perfumes: Perfume[] }) {
 
           {/* SUIVANT */}
           <button
-            onClick={() =>
-              router.push(
-                `/?page=${Math.min(currentPage + 1, totalPages)}&letter=${selectedLetter}`,
-              )
-            }
+            onClick={() => {
+              const newPage = Math.min(currentPage + 1, totalPages);
+
+              setCurrentPage(newPage);
+
+              window.history.pushState(
+                {},
+                "",
+                `/?page=${newPage}&letter=${selectedLetter}`,
+              );
+            }}
             className="px-4 py-2 rounded-xl bg-[var(--surface)] text-[var(--texte)] border border-black/5 hover:bg-[var(--accent)] transition-all cursor-pointer"
           >
             →

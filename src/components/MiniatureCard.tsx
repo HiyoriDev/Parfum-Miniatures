@@ -27,6 +27,11 @@ export default function MiniatureCard({
   origin,
   parfumeurName,
 }: MiniatureCardProps) {
+  const optimizedImage = image
+    ? image.startsWith("http")
+      ? `${image}?width=300&format=webp&quality=70`
+      : `/images/${image}`
+    : "/placeholder.png";
   return (
     <>
       {/* CARTE */}
@@ -41,13 +46,7 @@ export default function MiniatureCard({
         className="bg-[var(--surface)] hover:-translate-y-1 rounded-2xl p-3 shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer border border-black/5 block"
       >
         <Image
-          src={
-            image
-              ? image.startsWith("http")
-                ? image
-                : `/images/${image}`
-              : "/placeholder.png"
-          }
+          src={optimizedImage}
           alt={name}
           width={400}
           height={500}

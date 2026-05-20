@@ -63,6 +63,7 @@ export async function POST(request: Request) {
       "boite",
       "type",
       "contenance",
+      "description",
       "image_file",
     ];
 
@@ -99,12 +100,18 @@ export async function POST(request: Request) {
         },
       );
     }
+
+    const cleanedData = data.map((item: any) => ({
+      ...item,
+      description: item.description || "",
+    }));
+
     await supabase.from("perfumes").delete().neq("id", 0);
 
     const chunkSize = 500;
 
     for (let i = 0; i < data.length; i += chunkSize) {
-      const chunk = data.slice(i, i + chunkSize);
+      const chunk = cleanedData.slice(i, i + chunkSize);
 
       const { error } = await supabase.from("perfumes").insert(chunk);
 

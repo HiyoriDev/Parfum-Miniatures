@@ -31,6 +31,8 @@ export default function GestionClient() {
 
   const [newContenance, setNewContenance] = useState("");
 
+  const [newDescription, setNewDescription] = useState("");
+
   const [newImage, setNewImage] = useState("");
 
   const [deleteMiniature, setDeleteMiniature] = useState<any>(null);
@@ -231,7 +233,7 @@ export default function GestionClient() {
 
         <div className="min-w-[1600px] rounded-3xl overflow-hidden border border-black/5 shadow-sm">
           {/* HEADER */}
-          <div className="grid grid-cols-[70px_220px_400px_400px_160px_140px_160px_260px] bg-[var(--surface)] border-b border-black/5">
+          <div className="grid grid-cols-[70px_200px_320px_340px_150px_100px_120px_250px_220px] bg-[var(--surface)] border-b border-black/5">
             <div className="p-4 font-semibold border-r border-black/5">ID</div>
             <div className="p-4 font-semibold border-r border-black/5">
               Image
@@ -272,7 +274,9 @@ export default function GestionClient() {
             <div className="p-4 font-semibold border-r border-black/5">
               Contenance
             </div>
-
+            <div className="p-4 font-semibold border-r border-black/5">
+              Description
+            </div>
             <div className="p-4 font-semibold">Actions</div>
           </div>
 
@@ -280,7 +284,7 @@ export default function GestionClient() {
           {currentPerfumes.map((perfume, index) => (
             <div
               key={perfume.id}
-              className="grid grid-cols-[70px_220px_400px_400px_160px_140px_160px_260px] bg-[var(--fond)] border-b border-black/5 transition-all"
+              className="grid grid-cols-[70px_200px_320px_340px_150px_100px_120px_250px_220px] bg-[var(--fond)] border-b border-black/5 transition-all"
             >
               {/* ID */}
               <div className="p-4 flex items-center justify-center border-r border-black/5">
@@ -320,11 +324,56 @@ export default function GestionClient() {
                             .remove([oldFile]);
                         }
                       }
-                      const filename = `${Date.now()}-${file.name}`;
+                      const imageBitmap = await createImageBitmap(file);
+
+                      const canvas = document.createElement("canvas");
+
+                      canvas.width = 640;
+                      canvas.height = 480;
+
+                      const ctx = canvas.getContext("2d");
+
+                      if (!ctx) {
+                        toast.error("Erreur canvas");
+                        return;
+                      }
+
+                      ctx.fillStyle = "#ffffff";
+                      ctx.fillRect(0, 0, 640, 480);
+
+                      const scale = Math.min(
+                        640 / imageBitmap.width,
+                        480 / imageBitmap.height,
+                      );
+
+                      const width = imageBitmap.width * scale;
+
+                      const height = imageBitmap.height * scale;
+
+                      const x = (640 - width) / 2;
+
+                      const y = (480 - height) / 2;
+
+                      ctx.drawImage(imageBitmap, x, y, width, height);
+
+                      const blob = await new Promise<Blob | null>((resolve) => {
+                        canvas.toBlob(resolve, "image/jpeg", 0.8);
+                      });
+
+                      if (!blob) {
+                        toast.error("Erreur image");
+                        return;
+                      }
+
+                      const filename = `${Date.now()}.jpg`;
+
+                      const optimizedFile = new File([blob], filename, {
+                        type: "image/jpeg",
+                      });
 
                       const { error } = await supabase.storage
                         .from("images")
-                        .upload(filename, file);
+                        .upload(filename, optimizedFile);
 
                       if (error) {
                         console.log(error);
@@ -516,6 +565,29 @@ export default function GestionClient() {
                 />
               </div>
 
+              {/* DESCRIPTION */}
+              <div className="p-4 flex items-center border-r border-black/5">
+                <input
+                  value={perfume.description || ""}
+                  onChange={(e) => {
+                    const updated = [...perfumes];
+
+                    const realIndex = updated.findIndex(
+                      (p) => p.id === perfume.id,
+                    );
+
+                    updated[realIndex] = {
+                      ...perfume,
+                      description: e.target.value,
+                    };
+
+                    setPerfumes(updated);
+                  }}
+                  placeholder="Description..."
+                  className="w-full px-3 py-2 rounded-xl bg-[var(--surface)] border border-transparent focus:border-[var(--accent)] outline-none transition-all"
+                />
+              </div>
+
               <div className="p-4 flex items-center gap-3">
                 {/* SAVE */}
                 <button
@@ -533,6 +605,8 @@ export default function GestionClient() {
                           type: perfume.type,
 
                           contenance: perfume.contenance,
+
+                          description: perfume.description,
 
                           image_file: perfume.image_file,
                         })
@@ -586,11 +660,56 @@ export default function GestionClient() {
                   if (!file) return;
 
                   try {
-                    const filename = `${Date.now()}-${file.name}`;
+                    const imageBitmap = await createImageBitmap(file);
+
+                    const canvas = document.createElement("canvas");
+
+                    canvas.width = 640;
+                    canvas.height = 480;
+
+                    const ctx = canvas.getContext("2d");
+
+                    if (!ctx) {
+                      toast.error("Erreur canvas");
+                      return;
+                    }
+
+                    ctx.fillStyle = "#ffffff";
+                    ctx.fillRect(0, 0, 640, 480);
+
+                    const scale = Math.min(
+                      640 / imageBitmap.width,
+                      480 / imageBitmap.height,
+                    );
+
+                    const width = imageBitmap.width * scale;
+
+                    const height = imageBitmap.height * scale;
+
+                    const x = (640 - width) / 2;
+
+                    const y = (480 - height) / 2;
+
+                    ctx.drawImage(imageBitmap, x, y, width, height);
+
+                    const blob = await new Promise<Blob | null>((resolve) => {
+                      canvas.toBlob(resolve, "image/jpeg", 0.8);
+                    });
+
+                    if (!blob) {
+                      toast.error("Erreur image");
+                      return;
+                    }
+
+                    const filename = `${Date.now()}.jpg`;
+
+                    const optimizedFile = new File([blob], filename, {
+                      type: "image/jpeg",
+                    });
 
                     const { error } = await supabase.storage
                       .from("images")
-                      .upload(filename, file);
+                      .upload(filename, optimizedFile);
 
                     if (error) {
                       console.log(error);
@@ -636,27 +755,34 @@ export default function GestionClient() {
                 placeholder="Parfumeur"
                 className="p-4 rounded-2xl bg-[var(--fond)] border border-black/5 outline-none"
               />
-
+            </div>
+            <div className="grid grid-cols-3 gap-4">
               <input
                 value={newBoite}
                 onChange={(e) => setNewBoite(e.target.value)}
                 placeholder="Boîte"
-                className="p-4 rounded-2xl bg-[var(--fond)] border border-black/5 outline-none"
+                className="mt-4 w-full p-4 rounded-2xl bg-[var(--fond)] border border-black/5 outline-none"
               />
 
               <input
                 value={newType}
                 onChange={(e) => setNewType(e.target.value)}
                 placeholder="Type"
-                className="p-4 rounded-2xl bg-[var(--fond)] border border-black/5 outline-none"
+                className="mt-4 w-full p-4 rounded-2xl bg-[var(--fond)] border border-black/5 outline-none"
+              />
+              <input
+                value={newContenance}
+                onChange={(e) => setNewContenance(e.target.value)}
+                placeholder="Contenance"
+                className="mt-4 w-full p-4 rounded-2xl bg-[var(--fond)] border border-black/5 outline-none"
               />
             </div>
 
             <input
-              value={newContenance}
-              onChange={(e) => setNewContenance(e.target.value)}
-              placeholder="Contenance"
-              className="mt-4 w-full p-4 rounded-2xl bg-[var(--fond)] border border-black/5 outline-none"
+              value={newDescription}
+              onChange={(e) => setNewDescription(e.target.value)}
+              placeholder="Description"
+              className="w-full mt-4 min-h-[120px] p-5 rounded-2xl bg-[var(--fond)] outline-none resize-none"
             />
 
             {/* ACTIONS */}
@@ -703,6 +829,8 @@ export default function GestionClient() {
 
                           contenance: newContenance,
 
+                          description: newDescription,
+
                           image_file: newImage,
                         },
                       ])
@@ -725,6 +853,8 @@ export default function GestionClient() {
                       setNewType("");
 
                       setNewContenance("");
+
+                      setNewDescription("");
 
                       setNewImage("");
                     } else {

@@ -34,11 +34,17 @@ export default function ParfumClient({
 
   const [contenance, setContenance] = useState(perfume?.contenance || "");
 
+  const [description, setDescription] = useState(perfume?.description || "");
+
   const [image, setImage] = useState(perfume?.image_file || "");
 
   const router = useRouter();
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const optimizedImage = image?.startsWith("http")
+    ? `${image}?width=900`
+    : `/images/${image}`;
 
   return (
     <main className="min-h-screen bg-transparent text-[var(--texte)]">
@@ -47,11 +53,11 @@ export default function ParfumClient({
       <div className="h-24" />
 
       <section className="px-8 py-12">
-        <div className="grid lg:grid-cols-2 gap-16 items-start">
+        <div className="grid lg:grid-cols-2 gap-16 items-center">
           {/* IMAGE */}
           <div className="bg-[var(--surface)] rounded-[32px] p-8 shadow-sm border border-black/5">
             <Image
-              src={image?.startsWith("http") ? image : `/images/${image}`}
+              src={optimizedImage}
               alt={parfum}
               width={1200}
               height={1400}
@@ -71,11 +77,58 @@ export default function ParfumClient({
                     if (!file) return;
 
                     try {
-                      const filename = `${Date.now()}-${file.name}`;
+                      const imageBitmap = await createImageBitmap(file);
+
+                      const canvas = document.createElement("canvas");
+
+                      canvas.width = 640;
+                      canvas.height = 480;
+
+                      const ctx = canvas.getContext("2d");
+
+                      if (!ctx) {
+                        toast.error("Erreur canvas");
+                        return;
+                      }
+
+                      ctx.fillStyle = "#ffffff";
+                      ctx.fillRect(0, 0, 640, 480);
+
+                      /* RATIO */
+
+                      const scale = Math.min(
+                        640 / imageBitmap.width,
+                        480 / imageBitmap.height,
+                      );
+
+                      const width = imageBitmap.width * scale;
+
+                      const height = imageBitmap.height * scale;
+
+                      const x = (640 - width) / 2;
+
+                      const y = (480 - height) / 2;
+
+                      ctx.drawImage(imageBitmap, x, y, width, height);
+
+                      const blob = await new Promise<Blob | null>((resolve) => {
+                        canvas.toBlob(resolve, "image/jpeg", 0.8);
+                      });
+
+                      if (!blob) {
+                        toast.error("Erreur image");
+                        return;
+                      }
+
+                      const filename = `${Date.now()}.jpg`;
+
+                      const optimizedFile = new File([blob], filename, {
+                        type: "image/jpeg",
+                      });
 
                       const { error } = await supabase.storage
                         .from("images")
-                        .upload(filename, file);
+                        .upload(filename, optimizedFile);
 
                       if (error) {
                         console.log(error);
@@ -138,68 +191,91 @@ export default function ParfumClient({
 
             {/* CARDS */}
             <div className="space-y-4 max-w-3xl">
-              {/* BOITE */}
-              <div className="bg-[var(--surface)] rounded-2xl p-5 border border-black/5">
-                <p className="text-sm text-[var(--texte)]/50 mb-2">Boîte</p>
+              {/* LIGNE */}
+              <div className="grid grid-cols-3 gap-4">
+                {/* BOITE */}
+                <div className="bg-[var(--surface)] rounded-2xl p-5 border border-black/5">
+                  <p className="text-sm text-[var(--texte)]/50 mb-2">Boîte</p>
 
-                {editMode ? (
-                  <div className="flex bg-[var(--fond)] rounded-xl p-1 gap-1 w-fit">
-                    <button
-                      onClick={() => setBoite("Oui")}
-                      className={`px-4 py-2 rounded-lg text-sm transition-all cursor-pointer ${
-                        boite === "Oui"
-                          ? "bg-[var(--texte)] text-[var(--fond)]"
-                          : "hover:bg-black/5"
-                      }`}
-                    >
-                      Oui
-                    </button>
+                  {editMode ? (
+                    <div className="flex bg-[var(--fond)] rounded-xl p-1 gap-1 w-fit">
+                      <button
+                        onClick={() => setBoite("Oui")}
+                        className={`px-4 py-2 rounded-lg text-sm transition-all cursor-pointer ${
+                          boite === "Oui"
+                            ? "bg-[var(--texte)] text-[var(--fond)]"
+                            : "hover:bg-black/5"
+                        }`}
+                      >
+                        Oui
+                      </button>
 
-                    <button
-                      onClick={() => setBoite("Non")}
-                      className={`px-4 py-2 rounded-lg text-sm transition-all cursor-pointer ${
-                        boite === "Non"
-                          ? "bg-[var(--texte)] text-[var(--fond)]"
-                          : "hover:bg-black/5"
-                      }`}
-                    >
-                      Non
-                    </button>
-                  </div>
-                ) : (
-                  <p className="text-xl">{boite}</p>
-                )}
+                      <button
+                        onClick={() => setBoite("Non")}
+                        className={`px-4 py-2 rounded-lg text-sm transition-all cursor-pointer ${
+                          boite === "Non"
+                            ? "bg-[var(--texte)] text-[var(--fond)]"
+                            : "hover:bg-black/5"
+                        }`}
+                      >
+                        Non
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="text-xl">{boite || "Inconnu"}</p>
+                  )}
+                </div>
+
+                {/* TYPE */}
+                <div className="bg-[var(--surface)] rounded-2xl p-5 border border-black/5">
+                  <p className="text-sm text-[var(--texte)]/50 mb-2">Type</p>
+
+                  {editMode ? (
+                    <input
+                      value={type}
+                      onChange={(e) => setType(e.target.value)}
+                      className="text-xl bg-transparent outline-none border-b border-black/10 w-full"
+                    />
+                  ) : (
+                    <p className="text-xl">{type || "Inconnu"}</p>
+                  )}
+                </div>
+
+                {/* CONTENANCE */}
+                <div className="bg-[var(--surface)] rounded-2xl p-5 border border-black/5">
+                  <p className="text-sm text-[var(--texte)]/50 mb-2">
+                    Contenance
+                  </p>
+
+                  {editMode ? (
+                    <input
+                      value={contenance}
+                      onChange={(e) => setContenance(e.target.value)}
+                      className="text-xl bg-transparent outline-none border-b border-black/10 w-full"
+                    />
+                  ) : (
+                    <p className="text-xl">{contenance || "Inconnu"}</p>
+                  )}
+                </div>
               </div>
 
-              {/* TYPE */}
-              <div className="bg-[var(--surface)] rounded-2xl p-5 border border-black/5">
-                <p className="text-sm text-[var(--texte)]/50 mb-2">Type</p>
-
-                {editMode ? (
-                  <input
-                    value={type}
-                    onChange={(e) => setType(e.target.value)}
-                    className="text-xl bg-transparent outline-none border-b border-black/10 w-full"
-                  />
-                ) : (
-                  <p className="text-xl">{type}</p>
-                )}
-              </div>
-
-              {/* CONTENANCE */}
+              {/* DESCRIPTION */}
               <div className="bg-[var(--surface)] rounded-2xl p-5 border border-black/5">
                 <p className="text-sm text-[var(--texte)]/50 mb-2">
-                  Contenance
+                  Description
                 </p>
 
                 {editMode ? (
-                  <input
-                    value={contenance}
-                    onChange={(e) => setContenance(e.target.value)}
-                    className="text-xl bg-transparent outline-none border-b border-black/10 w-full"
+                  <textarea
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Description..."
+                    className="w-full min-h-[140px] bg-transparent outline-none resize-none"
                   />
                 ) : (
-                  <p className="text-xl">{contenance}</p>
+                  <p className="text-lg whitespace-pre-wrap">
+                    {description || "Aucune description"}
+                  </p>
                 )}
               </div>
             </div>
@@ -230,6 +306,8 @@ export default function ParfumClient({
                             type,
 
                             contenance,
+
+                            description,
 
                             image_file: image,
                           })
@@ -262,6 +340,8 @@ export default function ParfumClient({
                       setType(perfume.type);
 
                       setContenance(perfume.contenance);
+
+                      setDescription(perfume.description);
 
                       setImage(perfume.image_file);
 
