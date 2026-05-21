@@ -25,7 +25,7 @@ export default function GestionClient() {
 
   const [newParfumeur, setNewParfumeur] = useState("");
 
-  const [newBoite, setNewBoite] = useState("");
+  const [newBoite, setNewBoite] = useState("Oui");
 
   const [newType, setNewType] = useState("");
 
@@ -38,6 +38,8 @@ export default function GestionClient() {
   const [deleteMiniature, setDeleteMiniature] = useState<any>(null);
 
   const [previewImage, setPreviewImage] = useState("");
+
+  const [sortBy, setSortBy] = useState("parfum");
 
   const addImageInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -62,7 +64,13 @@ export default function GestionClient() {
 
   const filteredPerfumes = [...perfumes]
 
-    .sort((a, b) => b.id - a.id)
+    .sort((a, b) => {
+      const aValue = (a[sortBy] || "").toString().toLowerCase();
+
+      const bValue = (b[sortBy] || "").toString().toLowerCase();
+
+      return aValue.localeCompare(bValue);
+    })
 
     .filter((perfume) => {
       const parfumMatch = perfume.parfum
@@ -83,6 +91,95 @@ export default function GestionClient() {
   const currentPerfumes = filteredPerfumes.slice(start, start + perPage);
 
   const importInputRef = useRef<HTMLInputElement | null>(null);
+
+  const perfumeTypes = [
+    "ADP",
+    "APP",
+    "AR",
+    "AS",
+    "ASB",
+    "ASL",
+    "B",
+    "BAR",
+    "BAS",
+    "BM",
+    "BO",
+    "BP",
+    "C",
+    "CA",
+    "CC",
+    "CP",
+    "D",
+    "E",
+    "EAU",
+    "ECD",
+    "ED",
+    "EDC",
+    "EDCL",
+    "EDCN",
+    "EDF",
+    "EDJ",
+    "EDL",
+    "EDO",
+    "EDP",
+    "EDPB",
+    "EDPC",
+    "EDPE",
+    "EDPF",
+    "EDPI",
+    "EDPL",
+    "EDPP",
+    "EDPS",
+    "EDS",
+    "EDT",
+    "EDTC",
+    "EDTF",
+    "EDTI",
+    "EDTL",
+    "EDTPH",
+    "EDTS",
+    "EDTV",
+    "EE",
+    "EF",
+    "EP",
+    "ES",
+    "ESP",
+    "ET",
+    "EX",
+    "EXDP",
+    "EXP",
+    "EXT",
+    "F",
+    "FDP",
+    "FTC",
+    "G",
+    "GD",
+    "H",
+    "HB",
+    "HP",
+    "L",
+    "LAIT",
+    "LAR",
+    "LAS",
+    "LD",
+    "P",
+    "PB",
+    "PC",
+    "PClé",
+    "PDT",
+    "PS",
+    "RDP",
+    "S",
+    "SDP",
+    "SEDT",
+    "SH",
+    "T",
+    "TC",
+    "TM",
+    "UEDC",
+    "V",
+    "XDP",
+  ];
 
   return (
     <main className="min-h-screen bg-transparent text-[var(--texte)]">
@@ -233,15 +330,19 @@ export default function GestionClient() {
 
         <div className="min-w-[1600px] rounded-3xl overflow-hidden border border-black/5 shadow-sm">
           {/* HEADER */}
-          <div className="grid grid-cols-[70px_200px_320px_340px_150px_100px_120px_250px_220px] bg-[var(--surface)] border-b border-black/5">
-            <div className="p-4 font-semibold border-r border-black/5">ID</div>
-            <div className="p-4 font-semibold border-r border-black/5">
+          <div className="grid grid-cols-[200px_320px_340px_130px_150px_120px_300px_220px] bg-[var(--surface)] border-b border-black/5">
+            <div className="p-4 font-semibold border-r border-black/5 flex items-center justify-center">
               Image
             </div>
 
             {/* PARFUM */}
-            <div className="p-4 font-semibold border-r border-black/5 flex items-center gap-4">
-              <p className="shrink-0">Parfum</p>
+            <div className="p-4 font-semibold border-r border-black/5 flex items-center gap-4 justify-center">
+              <button
+                onClick={() => setSortBy("parfum")}
+                className="shrink-0 cursor-pointer hover:text-[var(--accent)] transition-all"
+              >
+                Parfum
+              </button>
 
               <input
                 value={searchParfum}
@@ -252,8 +353,13 @@ export default function GestionClient() {
             </div>
 
             {/* PARFUMEUR */}
-            <div className="p-4 font-semibold border-r border-black/5 flex items-center gap-4">
-              <p className="shrink-0">Parfumeur</p>
+            <div className="p-4 font-semibold border-r border-black/5 flex items-center gap-4 justify-center">
+              <button
+                onClick={() => setSortBy("parfumeur")}
+                className="shrink-0 cursor-pointer hover:text-[var(--accent)] transition-all"
+              >
+                Parfumeur
+              </button>
 
               <input
                 value={searchParfumeur}
@@ -263,33 +369,36 @@ export default function GestionClient() {
               />
             </div>
 
-            <div className="p-4 font-semibold border-r border-black/5">
+            <div className="p-4 font-semibold border-r border-black/5 flex items-center justify-center">
+              <button
+                onClick={() => setSortBy("type")}
+                className="cursor-pointer hover:text-[var(--accent)] transition-all "
+              >
+                Type
+              </button>
+            </div>
+
+            <div className="p-4 font-semibold border-r border-black/5 flex items-center justify-center">
               Boîte
             </div>
 
-            <div className="p-4 font-semibold border-r border-black/5">
-              Type
-            </div>
-
-            <div className="p-4 font-semibold border-r border-black/5">
+            <div className="p-4 font-semibold border-r border-black/5 flex items-center justify-center">
               Contenance
             </div>
-            <div className="p-4 font-semibold border-r border-black/5">
+            <div className="p-4 font-semibold border-r border-black/5 flex items-center justify-center">
               Description
             </div>
-            <div className="p-4 font-semibold">Actions</div>
+            <div className="p-4 font-semibold flex items-center justify-center">
+              Actions
+            </div>
           </div>
 
           {/* LIGNES */}
           {currentPerfumes.map((perfume, index) => (
             <div
               key={perfume.id}
-              className="grid grid-cols-[70px_200px_320px_340px_150px_100px_120px_250px_220px] bg-[var(--fond)] border-b border-black/5 transition-all"
+              className="grid grid-cols-[200px_320px_340px_130px_150px_120px_300px_220px] bg-[var(--fond)] border-b border-black/5 transition-all"
             >
-              {/* ID */}
-              <div className="p-4 flex items-center justify-center border-r border-black/5">
-                {perfume.id}
-              </div>
               {/* IMAGE */}
               <div className="p-3 flex items-center gap-3 border-r border-black/5">
                 <img
@@ -464,6 +573,34 @@ export default function GestionClient() {
                 />
               </div>
 
+              {/* TYPE */}
+              <div className="p-4 flex items-center border-r border-black/5">
+                <select
+                  value={perfume.type || ""}
+                  onChange={(e) => {
+                    const updated = [...perfumes];
+
+                    const realIndex = updated.findIndex(
+                      (p) => p.id === perfume.id,
+                    );
+
+                    updated[realIndex] = {
+                      ...perfume,
+                      type: e.target.value,
+                    };
+
+                    setPerfumes(updated);
+                  }}
+                  className="w-full px-3 py-2 rounded-xl bg-[var(--surface)] border border-transparent focus:border-[var(--accent)] outline-none transition-all cursor-pointer"
+                >
+                  {perfumeTypes.map((perfumeType) => (
+                    <option key={perfumeType} value={perfumeType}>
+                      {perfumeType}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               {/* BOITE */}
               <div className="p-4 flex items-center border-r border-black/5">
                 <div className="flex bg-[var(--surface)] rounded-xl p-1 gap-1">
@@ -517,29 +654,6 @@ export default function GestionClient() {
                     Non
                   </button>
                 </div>
-              </div>
-
-              {/* TYPE */}
-              <div className="p-4 flex items-center border-r border-black/5">
-                <input
-                  value={perfume.type}
-                  onChange={(e) => {
-                    const updated = [...perfumes];
-
-                    const realIndex = updated.findIndex(
-                      (p) => p.id === perfume.id,
-                    );
-
-                    updated[realIndex] = {
-                      ...perfume,
-
-                      type: e.target.value,
-                    };
-
-                    setPerfumes(updated);
-                  }}
-                  className="w-full px-3 py-2 rounded-xl bg-[var(--surface)] border border-transparent focus:border-[var(--accent)] outline-none transition-all"
-                />
               </div>
 
               {/* CONTENANCE */}
@@ -756,25 +870,59 @@ export default function GestionClient() {
                 className="p-4 rounded-2xl bg-[var(--fond)] border border-black/5 outline-none"
               />
             </div>
-            <div className="grid grid-cols-3 gap-4">
-              <input
-                value={newBoite}
-                onChange={(e) => setNewBoite(e.target.value)}
-                placeholder="Boîte"
-                className="mt-4 w-full p-4 rounded-2xl bg-[var(--fond)] border border-black/5 outline-none"
-              />
+            <div className="grid grid-cols-3 gap-4 mt-4">
+              {/* BOITE */}
+              <div className="flex items-center gap-3 h-14 px-4 rounded-2xl bg-[var(--fond)]">
+                <p className="text-sm shrink-0">Boîte :</p>
 
-              <input
+                <div className="flex gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setNewBoite("Oui")}
+                    className={`px-4 h-10 rounded-xl text-sm transition-all cursor-pointer ${
+                      newBoite === "Oui"
+                        ? "bg-[var(--texte)] text-[var(--fond)]"
+                        : "hover:bg-black/5"
+                    }`}
+                  >
+                    Oui
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setNewBoite("Non")}
+                    className={`px-4 h-10 rounded-xl text-sm transition-all cursor-pointer ${
+                      newBoite === "Non"
+                        ? "bg-[var(--texte)] text-[var(--fond)]"
+                        : "hover:bg-black/5"
+                    }`}
+                  >
+                    Non
+                  </button>
+                </div>
+              </div>
+
+              {/* TYPE */}
+              <select
                 value={newType}
                 onChange={(e) => setNewType(e.target.value)}
-                placeholder="Type"
-                className="mt-4 w-full p-4 rounded-2xl bg-[var(--fond)] border border-black/5 outline-none"
-              />
+                className="h-14 px-5 rounded-2xl bg-[var(--fond)] outline-none cursor-pointer w-full"
+              >
+                <option value="">Type</option>
+
+                {perfumeTypes.map((perfumeType) => (
+                  <option key={perfumeType} value={perfumeType}>
+                    {perfumeType}
+                  </option>
+                ))}
+              </select>
+
+              {/* CONTENANCE */}
               <input
                 value={newContenance}
                 onChange={(e) => setNewContenance(e.target.value)}
                 placeholder="Contenance"
-                className="mt-4 w-full p-4 rounded-2xl bg-[var(--fond)] border border-black/5 outline-none"
+                className="h-14 px-5 rounded-2xl bg-[var(--fond)] outline-none w-full"
               />
             </div>
 
