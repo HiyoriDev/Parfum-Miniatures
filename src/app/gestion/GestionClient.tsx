@@ -52,6 +52,8 @@ export default function GestionClient() {
       const { data } = await supabase
         .from("perfumes")
         .select("*")
+
+        .order("id", { ascending: false })
         .range(0, 10000);
 
       setPerfumes(data || []);
