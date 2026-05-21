@@ -21,6 +21,7 @@ export default function ParfumClient({
   currentPage,
   origin,
   originParfumeur,
+  returnUrl,
 }: any) {
   const [editMode, setEditMode] = useState(false);
 
@@ -45,6 +46,66 @@ export default function ParfumClient({
   const optimizedImage = image?.startsWith("http")
     ? `${image}?width=900`
     : `/images/${image}`;
+
+  const typeLabels: Record<string, string> = {
+    ADP: "Absolu de Parfum",
+    APP: "Applicateur",
+    LAR: "Lotion Après Rasage",
+    ASL: "After Shave Lotion",
+    ASB: "After Shave Balm",
+    B: "Bain",
+    BR: "Brillantine",
+    BAR: "Baume Après Rasage",
+    BP: "Boîte à poudre",
+    C: "Cologne",
+    CA: "Jeu de cartes",
+    CC: "Cologne Concentrate",
+    CP: "Cologne Parfumée",
+    D: "Dentifrice",
+    E: "Eau",
+    EE: "Eau d'Extrait",
+    EDC: "Eau de Cologne",
+    EDCF: "????",
+    EDF: "Eau de Fraicheur",
+    EDT: "Eau de Toilette",
+    EDP: "Eau de Parfum",
+    EDPC: "Eau de Parfum Concentrée",
+    EDPE: "Eau de Parfum Extrême",
+    EDPF: "Eau de Parfum Florale",
+    EDPI: "Eau de Parfum Intense",
+    EDPL: "Eau de Parfum Légère",
+    EDPP: "Eau de Parfum Poudrée",
+    EDPS: "Eau de Parfum Spray",
+    EDS: "Eau de Sport",
+    EDTC: "Eau de Toilette Concentrée",
+    EDTF: "Eau de Toilette Fraiche",
+    EDTI: "Eau de Toilette Intense",
+    EDTL: "Eau de Toilette Légère",
+    EDTS: "Eau de Toilette Spray",
+    EDTV: "Eau de Toilette Vitalisante",
+    EF: "Eau Florale",
+    EP: "Eau Parfumée",
+    ESP: "Esprit de Parfum",
+    EXT: "Extrait",
+    EXP: "Extrait de Parfum",
+    FDP: "Fleur de Parfum",
+    F: "Friction",
+    GD: "Gel Douche",
+    H: "Huile",
+    L: "Lotion",
+    LAIT: "Lait",
+    P: "Parfum",
+    PC: "Parfum Crème",
+    PDT: "Parfum de Toilette",
+    PSL: "Pre Shave Lotion",
+    S: "Savon",
+    SHP: "Shampooing",
+    T: "Talc",
+    V: "Voile",
+    XDP: "Extrême de Parfum",
+  };
+
+  const perfumeTypes = Object.keys(typeLabels);
 
   return (
     <main className="min-h-screen bg-transparent text-[var(--texte)]">
@@ -192,7 +253,7 @@ export default function ParfumClient({
             {/* CARDS */}
             <div className="space-y-4 max-w-3xl">
               {/* LIGNE */}
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-[180px_320px_180px] gap-4">
                 {/* BOITE */}
                 <div className="bg-[var(--surface)] rounded-2xl p-5 border border-black/5">
                   <p className="text-sm text-[var(--texte)]/50 mb-2">Boîte</p>
@@ -231,13 +292,21 @@ export default function ParfumClient({
                   <p className="text-sm text-[var(--texte)]/50 mb-2">Type</p>
 
                   {editMode ? (
-                    <input
+                    <select
                       value={type}
                       onChange={(e) => setType(e.target.value)}
-                      className="text-xl bg-transparent outline-none border-b border-black/10 w-full"
-                    />
+                      className="text-xl bg-[var(--surface)] outline-none border-b border-black/10 w-full"
+                    >
+                      {perfumeTypes.map((perfumeType) => (
+                        <option key={perfumeType} value={perfumeType}>
+                          {perfumeType}
+                        </option>
+                      ))}
+                    </select>
                   ) : (
-                    <p className="text-xl">{type || "Inconnu"}</p>
+                    <p className="text-xl">
+                      {typeLabels[type] || type || "Inconnu"}
+                    </p>
                   )}
                 </div>
 
@@ -260,7 +329,7 @@ export default function ParfumClient({
               </div>
 
               {/* DESCRIPTION */}
-              <div className="bg-[var(--surface)] rounded-2xl p-5 border border-black/5">
+              <div className="bg-[var(--surface)] rounded-2xl p-5 border border-black/5 w-[712px]">
                 <p className="text-sm text-[var(--texte)]/50 mb-2">
                   Description
                 </p>
@@ -365,7 +434,7 @@ export default function ParfumClient({
                   }
 
                   if (origin === "recherche") {
-                    router.push("/recherche");
+                    router.push(returnUrl || "/recherche");
 
                     return;
                   }

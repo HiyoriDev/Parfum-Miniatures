@@ -19,6 +19,8 @@ export default function GestionClient() {
 
   const [searchParfumeur, setSearchParfumeur] = useState("");
 
+  const [searchDescription, setSearchDescription] = useState("");
+
   const [openAdd, setOpenAdd] = useState(false);
 
   const [newParfum, setNewParfum] = useState("");
@@ -39,7 +41,7 @@ export default function GestionClient() {
 
   const [previewImage, setPreviewImage] = useState("");
 
-  const [sortBy, setSortBy] = useState("parfum");
+  const [editingId, setEditingId] = useState<number | null>(null);
 
   const addImageInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -62,27 +64,23 @@ export default function GestionClient() {
     [key: number]: HTMLInputElement | null;
   }>({});
 
-  const filteredPerfumes = [...perfumes]
+  const filteredPerfumes = perfumes.filter((perfume) => {
+    if (editingId === perfume.id) {
+      return true;
+    }
 
-    .sort((a, b) => {
-      const aValue = (a[sortBy] || "").toString().toLowerCase();
-
-      const bValue = (b[sortBy] || "").toString().toLowerCase();
-
-      return aValue.localeCompare(bValue);
-    })
-
-    .filter((perfume) => {
-      const parfumMatch = perfume.parfum
-        ?.toLowerCase()
-        .includes(searchParfum.toLowerCase());
-
-      const parfumeurMatch = perfume.parfumeur
-        ?.toLowerCase()
-        .includes(searchParfumeur.toLowerCase());
-
-      return parfumMatch && parfumeurMatch;
-    });
+    return (
+      (perfume.parfum || "")
+        .toLowerCase()
+        .includes(searchParfum.toLowerCase()) &&
+      (perfume.parfumeur || "")
+        .toLowerCase()
+        .includes(searchParfumeur.toLowerCase()) &&
+      (perfume.description || "")
+        .toLowerCase()
+        .includes(searchDescription.toLowerCase())
+    );
+  });
 
   const totalPages = Math.ceil(filteredPerfumes.length / perPage);
 
@@ -95,15 +93,10 @@ export default function GestionClient() {
   const perfumeTypes = [
     "ADP",
     "APP",
-    "AR",
-    "AS",
     "ASB",
     "ASL",
     "B",
     "BAR",
-    "BAS",
-    "BM",
-    "BO",
     "BP",
     "C",
     "CA",
@@ -111,18 +104,9 @@ export default function GestionClient() {
     "CP",
     "D",
     "E",
-    "EAU",
-    "ECD",
-    "ED",
     "EDC",
-    "EDCL",
-    "EDCN",
     "EDF",
-    "EDJ",
-    "EDL",
-    "EDO",
     "EDP",
-    "EDPB",
     "EDPC",
     "EDPE",
     "EDPF",
@@ -136,47 +120,27 @@ export default function GestionClient() {
     "EDTF",
     "EDTI",
     "EDTL",
-    "EDTPH",
     "EDTS",
     "EDTV",
     "EE",
     "EF",
     "EP",
-    "ES",
     "ESP",
-    "ET",
-    "EX",
-    "EXDP",
     "EXP",
     "EXT",
     "F",
     "FDP",
-    "FTC",
-    "G",
     "GD",
     "H",
-    "HB",
-    "HP",
     "L",
     "LAIT",
     "LAR",
-    "LAS",
-    "LD",
     "P",
-    "PB",
     "PC",
-    "PClé",
     "PDT",
-    "PS",
-    "RDP",
     "S",
-    "SDP",
     "SEDT",
-    "SH",
     "T",
-    "TC",
-    "TM",
-    "UEDC",
     "V",
     "XDP",
   ];
@@ -330,52 +294,37 @@ export default function GestionClient() {
 
         <div className="min-w-[1600px] rounded-3xl overflow-hidden border border-black/5 shadow-sm">
           {/* HEADER */}
-          <div className="grid grid-cols-[200px_320px_340px_130px_150px_120px_300px_220px] bg-[var(--surface)] border-b border-black/5">
+          <div className="grid grid-cols-[200px_300px_300px_130px_150px_120px_300px_220px] bg-[var(--surface)] border-b border-black/5">
             <div className="p-4 font-semibold border-r border-black/5 flex items-center justify-center">
               Image
             </div>
 
             {/* PARFUM */}
             <div className="p-4 font-semibold border-r border-black/5 flex items-center gap-4 justify-center">
-              <button
-                onClick={() => setSortBy("parfum")}
-                className="shrink-0 cursor-pointer hover:text-[var(--accent)] transition-all"
-              >
-                Parfum
-              </button>
+              <div className="font-semibold flex items-center">Parfum</div>
 
               <input
                 value={searchParfum}
                 onChange={(e) => setSearchParfum(e.target.value)}
                 placeholder="Recherche..."
-                className="flex-1 px-3 py-2 rounded-xl bg-[var(--fond)] border border-black/5 outline-none text-sm"
+                className="w-[140px] px-3 py-2 rounded-xl bg-[var(--fond)] border border-black/5 outline-none text-sm"
               />
             </div>
 
             {/* PARFUMEUR */}
             <div className="p-4 font-semibold border-r border-black/5 flex items-center gap-4 justify-center">
-              <button
-                onClick={() => setSortBy("parfumeur")}
-                className="shrink-0 cursor-pointer hover:text-[var(--accent)] transition-all"
-              >
-                Parfumeur
-              </button>
+              <div className="font-semibold flex items-center">Parfumeur</div>
 
               <input
                 value={searchParfumeur}
                 onChange={(e) => setSearchParfumeur(e.target.value)}
                 placeholder="Recherche..."
-                className="flex-1 px-3 py-2 rounded-xl bg-[var(--fond)] border border-black/5 outline-none text-sm"
+                className="w-[140px] px-3 py-2 rounded-xl bg-[var(--fond)] border border-black/5 outline-none text-sm"
               />
             </div>
 
             <div className="p-4 font-semibold border-r border-black/5 flex items-center justify-center">
-              <button
-                onClick={() => setSortBy("type")}
-                className="cursor-pointer hover:text-[var(--accent)] transition-all "
-              >
-                Type
-              </button>
+              <div className="p-4 font-semibold flex items-center">type</div>
             </div>
 
             <div className="p-4 font-semibold border-r border-black/5 flex items-center justify-center">
@@ -385,8 +334,16 @@ export default function GestionClient() {
             <div className="p-4 font-semibold border-r border-black/5 flex items-center justify-center">
               Contenance
             </div>
-            <div className="p-4 font-semibold border-r border-black/5 flex items-center justify-center">
-              Description
+
+            <div className="p-4 font-semibold border-r border-black/5 flex items-center gap-4 justify-center">
+              <div className="font-semibold flex items-center">Description</div>
+
+              <input
+                value={searchDescription}
+                onChange={(e) => setSearchDescription(e.target.value)}
+                placeholder="Recherche..."
+                className="w-[140px] px-3 py-2 rounded-xl bg-[var(--fond)] border border-black/5 outline-none text-sm"
+              />
             </div>
             <div className="p-4 font-semibold flex items-center justify-center">
               Actions
@@ -397,7 +354,7 @@ export default function GestionClient() {
           {currentPerfumes.map((perfume, index) => (
             <div
               key={perfume.id}
-              className="grid grid-cols-[200px_320px_340px_130px_150px_120px_300px_220px] bg-[var(--fond)] border-b border-black/5 transition-all"
+              className="grid grid-cols-[200px_300px_300px_130px_150px_120px_300px_220px] bg-[var(--fond)] border-b border-black/5 transition-all"
             >
               {/* IMAGE */}
               <div className="p-3 flex items-center gap-3 border-r border-black/5">
@@ -531,6 +488,7 @@ export default function GestionClient() {
               <div className="p-4 flex items-center border-r border-black/5">
                 <input
                   value={perfume.parfum}
+                  onFocus={() => setEditingId(perfume.id)}
                   onChange={(e) => {
                     const updated = [...perfumes];
 
@@ -554,6 +512,7 @@ export default function GestionClient() {
               <div className="p-4 flex items-center border-r border-black/5">
                 <input
                   value={perfume.parfumeur}
+                  onFocus={() => setEditingId(perfume.id)}
                   onChange={(e) => {
                     const updated = [...perfumes];
 
@@ -577,6 +536,7 @@ export default function GestionClient() {
               <div className="p-4 flex items-center border-r border-black/5">
                 <select
                   value={perfume.type || ""}
+                  onFocus={() => setEditingId(perfume.id)}
                   onChange={(e) => {
                     const updated = [...perfumes];
 
@@ -660,6 +620,7 @@ export default function GestionClient() {
               <div className="p-4 flex items-center border-r border-black/5">
                 <input
                   value={perfume.contenance}
+                  onFocus={() => setEditingId(perfume.id)}
                   onChange={(e) => {
                     const updated = [...perfumes];
 
@@ -683,6 +644,7 @@ export default function GestionClient() {
               <div className="p-4 flex items-center border-r border-black/5">
                 <input
                   value={perfume.description || ""}
+                  onFocus={() => setEditingId(perfume.id)}
                   onChange={(e) => {
                     const updated = [...perfumes];
 
@@ -727,6 +689,8 @@ export default function GestionClient() {
                         .eq("id", perfume.id);
 
                       if (!error) {
+                        setEditingId(null);
+
                         toast.success("Sauvegarde réussie ✨");
                       } else {
                         toast.error("Erreur sauvegarde");
@@ -752,6 +716,68 @@ export default function GestionClient() {
               </div>
             </div>
           ))}
+        </div>
+
+        <div className="py-4 flex items-center gap-4">
+          {/* PAGINATION */}
+          <button
+            onClick={() => setPage(Math.max(1, page - 1))}
+            className="w-14 h-14 cursor-pointer rounded-2xl bg-[var(--surface)] hover:bg-[var(--accent)] transition-all text-xl"
+          >
+            ←
+          </button>
+
+          <button
+            onClick={() => setPage(1)}
+            className={`w-14 h-14 cursor-pointer rounded-2xl transition-all ${
+              page === 1
+                ? "bg-[var(--texte)] text-[var(--fond)]"
+                : "bg-[var(--surface)] hover:bg-[var(--accent)]"
+            }`}
+          >
+            1
+          </button>
+
+          {page > 4 && <span className="opacity-50">...</span>}
+
+          {Array.from({ length: totalPages }, (_, i) => i + 1)
+            .filter(
+              (p) =>
+                p !== 1 && p !== totalPages && p >= page - 2 && p <= page + 2,
+            )
+            .map((p) => (
+              <button
+                key={p}
+                onClick={() => setPage(p)}
+                className={`w-14 h-14 cursor-pointer rounded-2xl transition-all ${
+                  page === p
+                    ? "bg-[var(--texte)] text-[var(--fond)]"
+                    : "bg-[var(--surface)] hover:bg-[var(--accent)]"
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+
+          {page < totalPages - 3 && <span className="opacity-50">...</span>}
+
+          <button
+            onClick={() => setPage(totalPages)}
+            className={`w-14 h-14 cursor-pointer rounded-2xl transition-all ${
+              page === totalPages
+                ? "bg-[var(--texte)] text-[var(--fond)]"
+                : "bg-[var(--surface)] hover:bg-[var(--accent)]"
+            }`}
+          >
+            {totalPages}
+          </button>
+
+          <button
+            onClick={() => setPage(Math.min(totalPages, page + 1))}
+            className="w-14 h-14 cursor-pointer rounded-2xl bg-[var(--surface)] hover:bg-[var(--accent)] transition-all text-xl"
+          >
+            →
+          </button>
         </div>
       </section>
 

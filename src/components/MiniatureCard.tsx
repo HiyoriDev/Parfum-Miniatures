@@ -15,6 +15,7 @@ type MiniatureCardProps = {
   selectedLetter?: string;
   origin?: string;
   parfumeurName?: string;
+  searchParams?: string;
 };
 
 export default function MiniatureCard({
@@ -26,6 +27,7 @@ export default function MiniatureCard({
   selectedLetter,
   origin,
   parfumeurName,
+  searchParams,
 }: MiniatureCardProps) {
   const optimizedImage = image
     ? image.startsWith("http")
@@ -41,7 +43,7 @@ export default function MiniatureCard({
             ? `/parfum/${id}?origin=parfumeur&parfumeur=${encodeURIComponent(parfumeurName || "")}`
             : currentPage
               ? `/parfum/${id}?page=${currentPage}&letter=${selectedLetter}&origin=home`
-              : `/parfum/${id}?origin=recherche`
+              : `/parfum/${id}?origin=recherche&return=/recherche?${searchParams}`
         }
         className="bg-[var(--surface)] hover:-translate-y-1 rounded-2xl p-3 shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer border border-black/5 block"
       >

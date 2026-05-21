@@ -27,6 +27,14 @@ export default function RecherchePage() {
 
   const [perfumes, setPerfumes] = useState<any[]>([]);
 
+  const [hasSearched, setHasSearched] = useState(false);
+
+  useEffect(() => {
+    setParfum(searchParams.get("parfum") || "");
+
+    setParfumeur(searchParams.get("parfumeur") || "");
+  }, [searchParams.toString()]);
+
   useEffect(() => {
     const fetchPerfumes = async () => {
       const { data } = await supabase
@@ -50,8 +58,12 @@ export default function RecherchePage() {
     if (parfumValue === "" && parfumeurValue === "") {
       setResults([]);
 
+      setHasSearched(false);
+
       return;
     }
+
+    setHasSearched(true);
 
     const filtered = perfumes.filter((perfume) => {
       const matchParfum =
@@ -66,7 +78,7 @@ export default function RecherchePage() {
     });
 
     setResults(filtered);
-  }, [searchParams]);
+  }, [searchParams.toString(), perfumes]);
 
   /* RECHERCHE */
   const handleSearch = () => {
@@ -89,7 +101,7 @@ export default function RecherchePage() {
     if (parfumeurValue) {
       params.set("parfumeur", parfumeurValue);
     }
-
+    setHasSearched(true);
     router.push(`/recherche?${params.toString()}`);
   };
 
@@ -169,6 +181,7 @@ export default function RecherchePage() {
                   boite={perfume.boite}
                   contenance={perfume.contenance}
                   type={perfume.type}
+                  searchParams={searchParams.toString()}
                 />
               ))}
             </div>

@@ -47,6 +47,7 @@ export default async function ParfumPage({
     letter?: string;
     origin?: string;
     parfumeur?: string;
+    return?: string;
   }>;
 }) {
   const resolvedParams = await params;
@@ -60,6 +61,8 @@ export default async function ParfumPage({
   const origin = resolvedSearchParams.origin || "home";
 
   const parfumeur = resolvedSearchParams.parfumeur || "";
+
+  const returnUrl = resolvedSearchParams.return || "";
 
   const cookieStore = await cookies();
 
@@ -89,6 +92,7 @@ export default async function ParfumPage({
       currentLetter={currentLetter}
       origin={origin}
       originParfumeur={parfumeur}
+      returnUrl={returnUrl}
     />
   );
 }

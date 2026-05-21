@@ -18,7 +18,8 @@ export default async function ParfumeurPage({
   const { data: filteredPerfumes } = await supabase
     .from("perfumes")
     .select("*")
-    .eq("parfumeur", decodedName);
+    .eq("parfumeur", decodedName)
+    .order("parfum", { ascending: true });
 
   const perfumes = filteredPerfumes || [];
 
