@@ -62,11 +62,19 @@ export default function HomeClient({ perfumes }: { perfumes: Perfume[] }) {
   const filteredPerfumes = useMemo(() => {
     let filtered = [...perfumes];
 
-    filtered.sort((a, b) => b.id - a.id);
-
-    if (selectedLetter !== "Tous") {
+    if (selectedLetter === "Tous") {
+      // Tous = plus récents d'abord
+      filtered.sort((a, b) => b.id - a.id);
+    } else {
+      // Lettre = ordre alphabétique
       filtered = filtered.filter((perfume) =>
         perfume.parfum?.toUpperCase().startsWith(selectedLetter),
+      );
+
+      filtered.sort((a, b) =>
+        a.parfum.localeCompare(b.parfum, "fr", {
+          sensitivity: "base",
+        }),
       );
     }
 

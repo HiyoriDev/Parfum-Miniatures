@@ -23,6 +23,9 @@ export default function MiniatureCard({
   brand,
   name,
   image,
+  boite,
+  contenance,
+  type,
   currentPage,
   selectedLetter,
   origin,
@@ -55,11 +58,22 @@ export default function MiniatureCard({
           className="rounded-xl mb-3 w-full aspect-[4/5] object-cover"
         />
 
-        <h3 className="font-medium text-sm truncate text-[var(--texte)]">
-          {name}
-        </h3>
+        <div className="space-y-1">
+          {/* LIGNE 1 */}
+          <p className="text-sm font-semibold text-[var(--texte)] truncate">
+            {name}
+          </p>
 
-        <p className="text-xs text-[var(--texte)]/70 truncate">{brand}</p>
+          {/* LIGNE 2 */}
+          <p className="text-xs text-[var(--texte)]/70 truncate">{brand}</p>
+
+          {/* LIGNE 3 */}
+          <p className="text-xs text-[var(--texte)]/65 truncate">
+            <span className="font-semibold">{type || "Inconnu"}</span>
+
+            <span className="font-normal"> - {contenance || "?"}</span>
+          </p>
+        </div>
       </Link>
     </>
   );
