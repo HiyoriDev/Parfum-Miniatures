@@ -169,17 +169,17 @@ export default function GestionClient() {
           {/* PAGINATION */}
           <button
             onClick={() => setPage(Math.max(1, page - 1))}
-            className="w-14 h-14 cursor-pointer rounded-2xl bg-[var(--surface)] hover:bg-[var(--accent)] transition-all text-xl"
+            className="w-14 h-14 cursor-pointer rounded-2xl bg-[var(--surface)] text-[var(--texte)] hover:bg-[var(--accent)] hover:text-[var(--texte)] transition-all duration-300 text-xl"
           >
             ←
           </button>
 
           <button
             onClick={() => setPage(1)}
-            className={`w-14 h-14 cursor-pointer rounded-2xl transition-all ${
+            className={`w-14 h-14 cursor-pointer rounded-2xl transition-all duration-300 ${
               page === 1
                 ? "bg-[var(--texte)] text-[var(--fond)]"
-                : "bg-[var(--surface)] hover:bg-[var(--accent)]"
+                : "bg-[var(--surface)] text-[var(--texte)] hover:bg-[var(--accent)] hover:text-[var(--texte)]"
             }`}
           >
             1
@@ -196,10 +196,10 @@ export default function GestionClient() {
               <button
                 key={p}
                 onClick={() => setPage(p)}
-                className={`w-14 h-14 cursor-pointer rounded-2xl transition-all ${
+                className={`w-14 h-14 cursor-pointer rounded-2xl transition-all duration-300 ${
                   page === p
                     ? "bg-[var(--texte)] text-[var(--fond)]"
-                    : "bg-[var(--surface)] hover:bg-[var(--accent)]"
+                    : "bg-[var(--surface)] text-[var(--texte)] hover:bg-[var(--accent)] hover:text-[var(--texte)]"
                 }`}
               >
                 {p}
@@ -210,10 +210,10 @@ export default function GestionClient() {
 
           <button
             onClick={() => setPage(totalPages)}
-            className={`w-14 h-14 cursor-pointer rounded-2xl transition-all ${
+            className={`w-14 h-14 cursor-pointer rounded-2xl transition-all duration-300 ${
               page === totalPages
                 ? "bg-[var(--texte)] text-[var(--fond)]"
-                : "bg-[var(--surface)] hover:bg-[var(--accent)]"
+                : "bg-[var(--surface)] text-[var(--texte)] hover:bg-[var(--accent)] hover:text-[var(--texte)]"
             }`}
           >
             {totalPages}
@@ -221,7 +221,7 @@ export default function GestionClient() {
 
           <button
             onClick={() => setPage(Math.min(totalPages, page + 1))}
-            className="w-14 h-14 cursor-pointer rounded-2xl bg-[var(--surface)] hover:bg-[var(--accent)] transition-all text-xl"
+            className="w-14 h-14 cursor-pointer rounded-2xl bg-[var(--surface)] text-[var(--texte)] hover:bg-[var(--accent)] hover:text-[var(--texte)] transition-all duration-300 text-xl"
           >
             →
           </button>
@@ -235,7 +235,7 @@ export default function GestionClient() {
 
                 toast.success("Téléchargement réussi ✨");
               }}
-              className="px-6 h-14 rounded-2xl bg-[var(--texte)] text-[var(--fond)] hover:bg-[var(--accent)] transition-all cursor-pointer flex items-center gap-2"
+              className="px-6 h-14 rounded-2xl bg-[var(--texte)] text-[var(--fond)] hover:bg-[var(--accent)] hover:text-[var(--texte)] transition-all duration-300 cursor-pointer flex items-center gap-2"
             >
               Export XLSX
             </button>
@@ -243,7 +243,7 @@ export default function GestionClient() {
             {/* IMPORT */}
             <button
               onClick={() => importInputRef.current?.click()}
-              className="px-6 h-14 rounded-2xl bg-[var(--texte)] text-[var(--fond)] hover:bg-[var(--accent)] transition-all cursor-pointer flex items-center gap-2"
+              className="px-6 h-14 rounded-2xl bg-[var(--texte)] text-[var(--fond)] hover:bg-[var(--accent)] hover:text-[var(--texte)] transition-all duration-300 cursor-pointer flex items-center gap-2"
             >
               Import XLSX
             </button>
@@ -701,7 +701,7 @@ export default function GestionClient() {
                       toast.error("Erreur sauvegarde");
                     }
                   }}
-                  className="px-5 cursor-pointer py-2 rounded-xl bg-[var(--texte)] text-[var(--fond)] hover:bg-[var(--accent)] transition-all"
+                  className="px-5 cursor-pointer py-2 rounded-xl bg-[var(--texte)] text-[var(--fond)] hover:bg-[var(--accent)] hover:text-[var(--texte)] transition-all"
                 >
                   Sauvegarder
                 </button>
@@ -876,7 +876,7 @@ export default function GestionClient() {
 
               <button
                 onClick={() => addImageInputRef.current?.click()}
-                className="px-5 py-3 cursor-pointer rounded-2xl bg-[var(--texte)] text-[var(--fond)] hover:bg-[var(--accent)] transition-all"
+                className="px-5 py-3 cursor-pointer rounded-2xl bg-[var(--texte)] text-[var(--fond)] hover:bg-[var(--accent)] hover:text-[var(--texte)] transition-all"
               >
                 {newImage ? "Changer image" : "Ajouter image"}
               </button>
@@ -979,7 +979,7 @@ export default function GestionClient() {
 
                   setNewImage("");
                 }}
-                className="px-6 py-3 cursor-pointer rounded-2xl bg-[var(--surface)] hover:bg-black/5 transition-all"
+                className="px-6 py-3 rounded-2xl cursor-pointer bg-[var(--texte)] text-[var(--fond)] hover:bg-[var(--accent)] hover:text-[var(--texte)] transition-all duration-300"
               >
                 Annuler
               </button>
@@ -1040,7 +1040,7 @@ export default function GestionClient() {
                     toast.error("Erreur ajout");
                   }
                 }}
-                className="px-6 py-3 rounded-2xl cursor-pointer bg-[var(--texte)] text-[var(--fond)] hover:bg-[var(--accent)] transition-all"
+                className="px-6 py-3 rounded-2xl cursor-pointer bg-[var(--texte)] text-[var(--fond)] hover:bg-[var(--accent)] hover:text-[var(--texte)] transition-all"
               >
                 Sauvegarder
               </button>
@@ -1060,7 +1060,7 @@ export default function GestionClient() {
               {/* ANNULER */}
               <button
                 onClick={() => setDeleteMiniature(null)}
-                className="px-6 py-3 cursor-pointer rounded-2xl bg-[var(--texte)] text-[var(--fond)] hover:bg-[var(--accent)] transition-all"
+                className="px-6 py-3 cursor-pointer rounded-2xl bg-[var(--texte)] text-[var(--fond)] hover:bg-[var(--accent)] hover:text-[var(--texte)] transition-all duration-300"
               >
                 Annuler
               </button>

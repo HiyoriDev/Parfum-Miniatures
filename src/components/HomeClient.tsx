@@ -112,7 +112,8 @@ export default function HomeClient({ perfumes }: { perfumes: Perfume[] }) {
         </h1>
 
         <h2 className="text-4xl font-light text-[var(--texte)] leading-tight">
-          Collection de {perfumes.length} miniatures avec leurs photos
+          Collection de {perfumes.length} miniatures avec leurs photos dont{" "}
+          {perfumes.filter((p) => p.boite === "Oui").length} avec leurs boîtes
         </h2>
       </section>
 
