@@ -1,3 +1,7 @@
+import { Analytics } from "@vercel/analytics/next";
+
+import { SpeedInsights } from "@vercel/speed-insights/next";
+
 import type { Metadata } from "next";
 
 import { Toaster } from "react-hot-toast";
@@ -48,6 +52,8 @@ export default function RootLayout({
           />
 
           {children}
+          <Analytics />
+          <SpeedInsights />
         </AdminProvider>
       </body>
     </html>

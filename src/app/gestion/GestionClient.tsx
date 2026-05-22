@@ -326,7 +326,7 @@ export default function GestionClient() {
             </div>
 
             <div className="p-4 font-semibold border-r border-black/5 flex items-center justify-center">
-              <div className="p-4 font-semibold flex items-center">type</div>
+              <div className="p-4 font-semibold flex items-center">Type</div>
             </div>
 
             <div className="p-4 font-semibold border-r border-black/5 flex items-center justify-center">
