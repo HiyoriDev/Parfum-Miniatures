@@ -6,8 +6,6 @@ import Header from "../../../components/Header";
 
 import { supabase } from "../../../../lib/supabase";
 
-import Image from "next/image";
-
 import toast from "react-hot-toast";
 
 import { useRouter } from "next/navigation";
@@ -115,11 +113,9 @@ export default function ParfumClient({
         <div className="grid lg:grid-cols-2 gap-16 items-center">
           {/* IMAGE */}
           <div className="bg-[var(--surface)] rounded-[32px] p-8 shadow-sm border border-black/5">
-            <Image
+            <img
               src={optimizedImage}
               alt={parfum}
-              width={1200}
-              height={1400}
               className="w-full rounded-3xl object-contain"
             />
 

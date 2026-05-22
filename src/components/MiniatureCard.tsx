@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 
 type MiniatureCardProps = {
@@ -50,11 +49,9 @@ export default function MiniatureCard({
         }
         className="bg-[var(--surface)] hover:-translate-y-1 rounded-2xl p-3 shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer border border-black/5 block"
       >
-        <Image
+        <img
           src={optimizedImage}
           alt={name}
-          width={400}
-          height={500}
           className="rounded-xl mb-3 w-full aspect-[4/5] object-cover"
         />
 
