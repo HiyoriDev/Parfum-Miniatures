@@ -12,7 +12,7 @@ import { useRef } from "react";
 
 import { supabase } from "../../../lib/supabase";
 
-export default function RecherchePage() {
+export default function RechercheClient({ isAdmin }: { isAdmin: boolean }) {
   const router = useRouter();
 
   const searchParams = useSearchParams();
@@ -30,9 +30,6 @@ export default function RecherchePage() {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
   const [editMode, setEditMode] = useState(false);
-
-  /* TEMP ADMIN */
-  const isAdmin = true;
 
   const selectedPerfume =
     selectedIndex !== null ? results[selectedIndex] : null;
