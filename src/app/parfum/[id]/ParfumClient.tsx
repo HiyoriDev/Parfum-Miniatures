@@ -43,9 +43,7 @@ export default function ParfumClient({
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const optimizedImage = image?.startsWith("http")
-    ? `${image}?width=900`
-    : `/images/${image}`;
+  const optimizedImage = image?.startsWith("http") ? image : `/images/${image}`;
 
   const typeLabels: Record<string, string> = {
     ADP: "Absolu de Parfum",

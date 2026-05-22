@@ -34,7 +34,7 @@ export default function MiniatureCard({
 }: MiniatureCardProps) {
   const optimizedImage = image
     ? image.startsWith("http")
-      ? `${image}?width=300&format=webp&quality=70`
+      ? image
       : `/images/${image}`
     : "/placeholder.png";
   return (

@@ -418,7 +418,7 @@ export default function RechercheClient({ isAdmin }: { isAdmin: boolean }) {
               <img
                 src={
                   selectedPerfume.image_file?.startsWith("http")
-                    ? `${selectedPerfume.image_file}?width=2000&format=webp&quality=100`
+                    ? selectedPerfume.image_file
                     : `/images/${selectedPerfume.image_file}`
                 }
                 alt={selectedPerfume.parfum}
