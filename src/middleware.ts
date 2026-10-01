@@ -29,11 +29,13 @@ export function middleware(request: NextRequest) {
       script-src
       'self'
       'unsafe-inline'
-      'unsafe-eval';
+      'unsafe-eval'
+      https://panel.chez-chlopie.fr;
 
       connect-src
       'self'
-      https://oyrmxekkaymoxulkrpqc.supabase.co;
+      https://oyrmxekkaymoxulkrpqc.supabase.co
+      https://panel.chez-chlopie.fr;
     `
       .replace(/\n/g, " ")
       .trim(),

@@ -8,6 +8,8 @@ import { Toaster } from "react-hot-toast";
 
 import { Geist, Geist_Mono } from "next/font/google";
 
+import Script from "next/script";
+
 import "./globals.css";
 
 import { AdminProvider } from "../context/AdminContext";
@@ -55,6 +57,8 @@ export default function RootLayout({
           <Analytics />
           <SpeedInsights />
         </AdminProvider>
+        {/* Mesure d'audience du Central Admin (sans cookies) */}
+        <Script src="https://panel.chez-chlopie.fr/t.js" strategy="afterInteractive" />
       </body>
     </html>
   );
