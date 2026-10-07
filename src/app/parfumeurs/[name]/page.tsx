@@ -1,82 +1,67 @@
-import { supabase } from "../../../../lib/supabase";
+import type { Metadata } from "next";
+import { notFound, redirect } from "next/navigation";
 
-import Header from "../../../components/Header";
-import Spacer from "../../../components/Spacer";
-import MiniatureCard from "../../../components/MiniatureCard";
+import BackButton from "@/components/BackButton";
+import MiniatureGrid from "@/components/MiniatureGrid";
+import Pagination, { pageHref } from "@/components/Pagination";
+import { initialLetter, parsePage, plural } from "@/lib/perfume";
+import { listByParfumeur, PAGE_SIZE } from "@/lib/queries";
 
-import Link from "next/link";
+/**
+ * Next 16.4 transmet le nom encodé à la page (« M%C3%A4urer ») mais déjà décodé
+ * à generateMetadata (« Mäurer ») : on décode quand c'est possible, sinon on
+ * garde la valeur telle quelle (ex. « 100% » déjà décodé).
+ */
+function parfumeurName(raw: string) {
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
+}
+
+export async function generateMetadata({
+  params,
+}: PageProps<"/parfumeurs/[name]">): Promise<Metadata> {
+  const name = parfumeurName((await params).name);
+  return {
+    title: name,
+    description: `Les miniatures de parfum ${name} de la collection, avec leurs photos.`,
+  };
+}
 
 export default async function ParfumeurPage({
   params,
-}: {
-  params: Promise<{ name: string }>;
-}) {
-  const { name } = await params;
+  searchParams,
+}: PageProps<"/parfumeurs/[name]">) {
+  const name = parfumeurName((await params).name);
+  const page = parsePage((await searchParams).page);
 
-  const decodedName = decodeURIComponent(name);
+  const { items, total } = await listByParfumeur(name, page);
+  if (total === 0) notFound();
 
-  const { data: filteredPerfumes } = await supabase
-    .from("perfumes")
-    .select("*")
-    .eq("parfumeur", decodedName)
-    .order("parfum", { ascending: true });
+  const pathname = `/parfumeurs/${encodeURIComponent(name)}`;
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+  if (page > totalPages) redirect(pageHref(pathname, {}, totalPages));
 
-  const perfumes = filteredPerfumes || [];
+  const letter = initialLetter(name) ?? "A";
 
   return (
-    <main className="min-h-screen bg-transparent text-[var(--texte)] flex flex-col">
-      <Header />
+    <div className="mx-auto max-w-screen-2xl px-4 pt-4 pb-16 md:px-8 md:pt-8">
+      <BackButton
+        fallback={`/parfumeurs?letter=${encodeURIComponent(letter)}`}
+        label="Parfumeurs"
+      />
 
-      <Spacer />
-      <Spacer />
+      <div className="mt-4 mb-8">
+        <h1 className="font-display text-5xl font-semibold break-words italic md:text-6xl">
+          {name}
+        </h1>
+        <p className="mt-2 text-texte-doux">{plural(total, "miniature")}</p>
+      </div>
 
-      <section className="p-10">
-        {/* HEADER */}
-        <section className="mb-12">
-          <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6">
-            <div className="flex flex-col gap-8">
-              <div>
-                <Link
-                  href="/parfumeurs"
-                  className="inline-block px-9 py-3.5 rounded-2xl bg-[var(--texte)] text-[var(--fond)] text-[18px] transition-all hover:bg-[var(--accent)] hover:text-[var(--texte)] hover:scale-[1.02] active:scale-[0.98]"
-                >
-                  ← Retour aux parfumeurs
-                </Link>
-              </div>
-
-              <div>
-                <h1 className="text-5xl font-light break-words text-[var(--texte)]">
-                  {decodedName}
-                </h1>
-
-                <p className="mt-4 text-[var(--texte)]/60 text-lg">
-                  {perfumes.length} miniatures
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* LISTE */}
-        <section>
-          <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-10 gap-4">
-            {perfumes.map((perfume) => (
-              <MiniatureCard
-                id={perfume.id}
-                key={perfume.id}
-                brand={perfume.parfumeur}
-                name={perfume.parfum}
-                image={perfume.image_file!}
-                boite={perfume.boite}
-                contenance={perfume.contenance}
-                type={perfume.type}
-                origin="parfumeur"
-                parfumeurName={decodedName}
-              />
-            ))}
-          </div>
-        </section>
-      </section>
-    </main>
+      <MiniatureGrid perfumes={items} />
+      <Pagination page={page} totalPages={totalPages} pathname={pathname} />
+    </div>
   );
 }

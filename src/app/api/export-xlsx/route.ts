@@ -1,67 +1,25 @@
-import { NextResponse } from "next/server";
-
-import { supabase } from "../../../../lib/supabase";
-
-import * as XLSX from "xlsx";
-
-import { cookies } from "next/headers";
-
-import { verifyToken } from "../../../../lib/auth";
+import { buildWorkbook, fetchAllPerfumes } from "@/lib/collection-file";
+import { isAdmin } from "@/lib/session";
+import { supabaseAdmin } from "@/lib/supabase";
 
 export async function GET() {
+  if (!(await isAdmin())) {
+    return Response.json({ error: "Non autorisé" }, { status: 401 });
+  }
+
   try {
-    const cookieStore = await cookies();
+    const buffer = buildWorkbook(await fetchAllPerfumes(supabaseAdmin()));
+    const date = new Date().toISOString().slice(0, 10);
 
-    const token = cookieStore.get("admin_token")?.value;
-
-    if (!token || !verifyToken(token)) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Non autorisé",
-        },
-        {
-          status: 401,
-        },
-      );
-    }
-
-    const { data } = await supabase
-      .from("perfumes")
-      .select("*")
-      .range(0, 10000);
-
-    const perfumes = data || [];
-
-    const worksheet = XLSX.utils.json_to_sheet(perfumes);
-
-    const workbook = XLSX.utils.book_new();
-
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Perfumes");
-
-    const buffer = XLSX.write(workbook, {
-      type: "buffer",
-      bookType: "xlsx",
-    });
-
-    return new Response(buffer, {
-      status: 200,
-
+    return new Response(new Uint8Array(buffer), {
       headers: {
-        "Content-Disposition": 'attachment; filename="perfumes.xlsx"',
-
-        "Content-Type":
-          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "Content-Disposition": `attachment; filename="miniatures-${date}.xlsx"`,
+        "Cache-Control": "no-store",
       },
     });
-  } catch {
-    return NextResponse.json(
-      {
-        success: false,
-      },
-      {
-        status: 500,
-      },
-    );
+  } catch (error) {
+    console.error(error);
+    return Response.json({ error: "Export impossible" }, { status: 500 });
   }
 }

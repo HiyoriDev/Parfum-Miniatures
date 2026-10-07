@@ -1,98 +1,41 @@
-import { cookies } from "next/headers";
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 
-import { supabase } from "../../../../lib/supabase";
+import { getPerfume, listParfumeurs } from "@/lib/queries";
+import { isAdmin } from "@/lib/session";
 
-import { verifyToken } from "../../../../lib/auth";
+import PerfumeDetail from "./PerfumeDetail";
 
-import ParfumClient from "./ParfumClient";
+async function findPerfume(id: string) {
+  const numericId = Number(id);
+  if (!Number.isInteger(numericId) || numericId <= 0) return null;
+  return getPerfume(numericId);
+}
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{
-    id: string;
-  }>;
-}) {
-  const { id } = await params;
+export async function generateMetadata({ params }: PageProps<"/parfum/[id]">): Promise<Metadata> {
+  const perfume = await findPerfume((await params).id);
+  if (!perfume) return { title: "Miniature introuvable" };
 
-  const { data: perfume } = await supabase
-    .from("perfumes")
-    .select("*")
-    .eq("id", Number(id))
-    .single();
-
-  if (!perfume) {
-    return {
-      title: "Parfum introuvable",
-    };
-  }
-
+  const title = `${perfume.parfum} — ${perfume.parfumeur}`;
+  const description = `Miniature ${perfume.parfum} de ${perfume.parfumeur} : photo, type, contenance et présence de la boîte.`;
   return {
-    title: `${perfume.parfum} - ${perfume.parfumeur} | Miniatures de Parfum`,
-
-    description: `Découvrez la miniature ${perfume.parfum} de ${perfume.parfumeur} avec photo et détails.`,
+    title,
+    description,
+    alternates: { canonical: `/parfum/${perfume.id}` },
+    openGraph: {
+      title,
+      description,
+      images: [{ url: perfume.image_file, width: 640, height: 480 }],
+    },
   };
 }
 
-export default async function ParfumPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{
-    id: string;
-  }>;
+export default async function PerfumePage({ params }: PageProps<"/parfum/[id]">) {
+  const perfume = await findPerfume((await params).id);
+  if (!perfume) notFound();
 
-  searchParams: Promise<{
-    page?: string;
-    letter?: string;
-    origin?: string;
-    parfumeur?: string;
-    return?: string;
-  }>;
-}) {
-  const resolvedParams = await params;
+  // Les noms de parfumeurs ne servent qu'à l'édition : inutile de les envoyer aux visiteurs.
+  const parfumeurs = (await isAdmin()) ? (await listParfumeurs()).map(({ name }) => name) : [];
 
-  const resolvedSearchParams = await searchParams;
-
-  const currentPage = resolvedSearchParams.page || "1";
-
-  const currentLetter = resolvedSearchParams.letter || "Tous";
-
-  const origin = resolvedSearchParams.origin || "home";
-
-  const parfumeur = resolvedSearchParams.parfumeur || "";
-
-  const returnUrl = resolvedSearchParams.return || "";
-
-  const cookieStore = await cookies();
-
-  const token = cookieStore.get("admin_token")?.value;
-
-  const isAdmin = !!token && verifyToken(token);
-
-  const { data: perfume } = await supabase
-    .from("perfumes")
-    .select("*")
-    .eq("id", Number(resolvedParams.id))
-    .single();
-
-  if (!perfume) {
-    return (
-      <main className="min-h-screen flex items-center justify-center">
-        Parfum introuvable
-      </main>
-    );
-  }
-
-  return (
-    <ParfumClient
-      perfume={perfume}
-      isAdmin={isAdmin}
-      currentPage={currentPage}
-      currentLetter={currentLetter}
-      origin={origin}
-      originParfumeur={parfumeur}
-      returnUrl={returnUrl}
-    />
-  );
+  return <PerfumeDetail perfume={perfume} parfumeurs={parfumeurs} />;
 }

@@ -1,61 +1,46 @@
 "use client";
 
-import { useState } from "react";
-
-import LoginModal from "./LoginModal";
-
-import { useRouter } from "next/navigation";
-
+import Link from "next/link";
+import { useTransition } from "react";
 import toast from "react-hot-toast";
 
-import { useAdmin } from "../context/AdminContext";
+import { logout } from "@/app/actions/auth";
+
+import { useIsAdmin } from "./AdminProvider";
 
 export default function Footer() {
-  const [open, setOpen] = useState(false);
-
-  const router = useRouter();
-
-  const { isAdmin, setIsAdmin } = useAdmin();
-
-  async function handleLogout() {
-    await fetch("/api/logout", {
-      method: "POST",
-    });
-
-    setIsAdmin(false);
-
-    toast.success("Déconnexion réussie 👋");
-  }
+  const isAdmin = useIsAdmin();
+  const [pending, startTransition] = useTransition();
 
   return (
-    <>
-      <footer className="bg-[var(--surface)] border-t border-black/5 px-8 py-6 flex items-center justify-between">
-        <p className="text-sm text-[var(--texte)]/70">
-          © 2026 Parfum Miniatures
-        </p>
+    <footer className="border-t border-texte/5 bg-surface/80 backdrop-blur-sm">
+      <div className="mx-auto flex max-w-screen-2xl items-center justify-between gap-4 px-4 py-5 text-sm md:px-8">
+        <p className="text-texte/70">© {new Date().getFullYear()} Parfum Miniatures</p>
 
-        {!isAdmin ? (
+        {isAdmin ? (
           <button
-            onClick={() => setOpen(true)}
-            className="text-sm text-[var(--texte)] transition-all hover:text-[var(--accent)] hover:opacity-100 cursor-pointer"
-          >
-            Connexion
-          </button>
-        ) : (
-          <button
-            onClick={() => {
-              handleLogout();
-
-              router.push("/");
-            }}
-            className="text-sm text-[var(--texte)] transition-all hover:text-[var(--accent)] hover:opacity-100 cursor-pointer"
+            type="button"
+            disabled={pending}
+            onClick={() =>
+              startTransition(async () => {
+                await logout();
+                toast.success("Déconnexion réussie");
+              })
+            }
+            className="text-texte/80 transition-colors hover:text-accent-fonce"
           >
             Déconnexion
           </button>
+        ) : (
+          <Link
+            href="/connexion"
+            prefetch={false}
+            className="text-texte/80 transition-colors hover:text-accent-fonce"
+          >
+            Connexion
+          </Link>
         )}
-      </footer>
-
-      <LoginModal isOpen={open} onClose={() => setOpen(false)} />
-    </>
+      </div>
+    </footer>
   );
 }

@@ -1,77 +1,46 @@
-"use client";
-
 import Link from "next/link";
 
-type MiniatureCardProps = {
-  id: number;
-  brand: string;
-  name: string;
-  image: string;
-  boite: string;
-  contenance: string;
-  type: string;
-  currentPage?: number;
-  selectedLetter?: string;
-  origin?: string;
-  parfumeurName?: string;
-  searchParams?: string;
+import { typeLabel, type PerfumeSummary } from "@/lib/perfume";
+
+import Photo from "./Photo";
+
+type Props = {
+  perfume: PerfumeSummary;
+  /** Ouvre un aperçu au lieu de la fiche (clic simple uniquement : Ctrl/⌘-clic garde le lien). */
+  onOpen?: () => void;
+  priority?: boolean;
 };
 
-export default function MiniatureCard({
-  id,
-  brand,
-  name,
-  image,
-  boite,
-  contenance,
-  type,
-  currentPage,
-  selectedLetter,
-  origin,
-  parfumeurName,
-  searchParams,
-}: MiniatureCardProps) {
-  const optimizedImage = image
-    ? image.startsWith("http")
-      ? image
-      : `/images/${image}`
-    : "/placeholder.png";
+export default function MiniatureCard({ perfume, onOpen, priority }: Props) {
   return (
-    <>
-      {/* CARTE */}
-      <Link
-        href={
-          origin === "parfumeur"
-            ? `/parfum/${id}?origin=parfumeur&parfumeur=${encodeURIComponent(parfumeurName || "")}`
-            : currentPage
-              ? `/parfum/${id}?page=${currentPage}&letter=${selectedLetter}&origin=home`
-              : `/parfum/${id}?origin=recherche&return=/recherche?${searchParams}`
-        }
-        className="bg-[var(--surface)] hover:-translate-y-1 rounded-2xl p-3 shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer border border-black/5 block"
-      >
-        <img
-          src={optimizedImage}
-          alt={name}
-          className="rounded-xl mb-3 w-full aspect-[4/5] object-cover"
-        />
+    <Link
+      href={`/parfum/${perfume.id}`}
+      // Pas de gestionnaire du tout hors aperçu : la carte reste alors un composant serveur.
+      onClick={
+        onOpen &&
+        ((event) => {
+          if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+          event.preventDefault();
+          onOpen();
+        })
+      }
+      className="group block rounded-2xl border border-texte/5 bg-carte/85 p-2 shadow-[0_1px_2px_rgb(53_39_31/0.05)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_12px_28px_-12px_rgb(53_39_31/0.35)] motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+    >
+      <Photo
+        src={perfume.image_file}
+        alt={perfume.parfum}
+        priority={priority}
+        className="rounded-xl"
+      />
 
-        <div className="space-y-1">
-          {/* LIGNE 1 */}
-          <p className="text-sm font-semibold text-[var(--texte)] truncate">
-            {name}
-          </p>
-
-          {/* LIGNE 2 */}
-          <p className="text-xs text-[var(--texte)]/70 truncate">{brand}</p>
-
-          {/* LIGNE 3 */}
-          <p className="text-xs text-[var(--texte)]/65 truncate">
-            <span className="font-semibold">{type || "Inconnu"}</span>
-
-            <span className="font-normal"> - {contenance || "?"}</span>
-          </p>
-        </div>
-      </Link>
-    </>
+      <div className="space-y-0.5 px-1.5 pt-2.5 pb-1">
+        <p className="truncate text-sm font-semibold">{perfume.parfum}</p>
+        <p className="truncate text-xs text-texte-doux">{perfume.parfumeur}</p>
+        <p className="truncate text-xs text-texte-doux/90">
+          <span className="font-medium text-texte/80">{typeLabel(perfume.type)}</span>
+          {perfume.contenance && <> · {perfume.contenance}</>}
+        </p>
+      </div>
+    </Link>
   );
 }

@@ -1,1128 +1,354 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
-
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useRef, useState, useTransition } from "react";
+import { Download, LoaderCircle, Plus, Upload } from "lucide-react";
 import toast from "react-hot-toast";
 
-import Header from "../../components/Header";
+import { importCollection, type ImportSummary } from "@/app/actions/import";
+import { deletePerfume } from "@/app/actions/perfumes";
+import Dialog from "@/components/Dialog";
+import PerfumeForm from "@/components/form/PerfumeForm";
+import Pagination, { pageHref } from "@/components/Pagination";
+import { formatCount, plural, type Perfume } from "@/lib/perfume";
 
-import Footer from "../../components/Footer";
+import GestionRow, { ROW_GRID } from "./GestionRow";
 
-import { supabase } from "../../../lib/supabase";
+type Filters = { parfum: string; parfumeur: string; description: string };
 
-export default function GestionClient() {
-  const [perfumes, setPerfumes] = useState<any[]>([]);
+type Props = {
+  perfumes: Perfume[];
+  total: number;
+  page: number;
+  totalPages: number;
+  filters: Filters;
+  parfumeurs: string[];
+};
 
-  const [page, setPage] = useState(1);
+const FILTERS: { key: keyof Filters; label: string }[] = [
+  { key: "parfum", label: "Parfum" },
+  { key: "parfumeur", label: "Parfumeur" },
+  { key: "description", label: "Description" },
+];
 
-  const [searchParfum, setSearchParfum] = useState("");
+export default function GestionClient({
+  perfumes,
+  total,
+  page,
+  totalPages,
+  filters,
+  parfumeurs,
+}: Props) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [searching, startSearch] = useTransition();
+  const [search, setSearch] = useState(filters);
 
-  const [searchParfumeur, setSearchParfumeur] = useState("");
+  const [adding, setAdding] = useState(false);
+  const [toDelete, setToDelete] = useState<Perfume | null>(null);
+  const [deleting, startDelete] = useTransition();
+  const [preview, setPreview] = useState<string | null>(null);
 
-  const [searchDescription, setSearchDescription] = useState("");
+  const importInput = useRef<HTMLInputElement>(null);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importSummary, setImportSummary] = useState<ImportSummary | null>(null);
+  const [importing, startImport] = useTransition();
 
-  const [openAdd, setOpenAdd] = useState(false);
-
-  const [newParfum, setNewParfum] = useState("");
-
-  const [newParfumeur, setNewParfumeur] = useState("");
-
-  const [newBoite, setNewBoite] = useState("Oui");
-
-  const [newType, setNewType] = useState("");
-
-  const [newContenance, setNewContenance] = useState("");
-
-  const [newDescription, setNewDescription] = useState("");
-
-  const [newImage, setNewImage] = useState("");
-
-  const [deleteMiniature, setDeleteMiniature] = useState<any>(null);
-
-  const [previewImage, setPreviewImage] = useState("");
-
-  const [editingId, setEditingId] = useState<number | null>(null);
-
-  const addImageInputRef = useRef<HTMLInputElement | null>(null);
-
-  const perPage = 50;
-
+  // Recherche à la frappe, envoyée au serveur 300 ms après la dernière touche.
   useEffect(() => {
-    const fetchPerfumes = async () => {
-      const { data } = await supabase
-        .from("perfumes")
-        .select("*")
+    if (FILTERS.every(({ key }) => search[key].trim() === filters[key])) return;
+    const timer = setTimeout(() => {
+      startSearch(() => router.replace(pageHref(pathname, search, 1), { scroll: false }));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search, filters, pathname, router]);
 
-        .order("id", { ascending: false })
-        .range(0, 10000);
+  function runImport(file: File, mode: "preview" | "apply") {
+    const formData = new FormData();
+    formData.set("file", file);
+    formData.set("mode", mode);
 
-      setPerfumes(data || []);
-    };
+    startImport(async () => {
+      const result = await importCollection(formData);
+      if (!result.ok) {
+        toast.error(result.error, { duration: 8000 });
+        setImportFile(null);
+        return;
+      }
+      if (mode === "preview") {
+        setImportFile(file);
+        setImportSummary(result.summary);
+        return;
+      }
+      toast.success("Import terminé");
+      setImportFile(null);
+    });
+  }
 
-    fetchPerfumes();
-  }, []);
-
-  const fileInputRefs = useRef<{
-    [key: number]: HTMLInputElement | null;
-  }>({});
-
-  const filteredPerfumes = perfumes.filter((perfume) => {
-    if (editingId === perfume.id) {
-      return true;
-    }
-
-    return (
-      (perfume.parfum || "")
-        .toLowerCase()
-        .includes(searchParfum.toLowerCase()) &&
-      (perfume.parfumeur || "")
-        .toLowerCase()
-        .includes(searchParfumeur.toLowerCase()) &&
-      (perfume.description || "")
-        .toLowerCase()
-        .includes(searchDescription.toLowerCase())
-    );
-  });
-
-  const totalPages = Math.ceil(filteredPerfumes.length / perPage);
-
-  const start = (page - 1) * perPage;
-
-  const currentPerfumes = filteredPerfumes.slice(start, start + perPage);
-
-  const importInputRef = useRef<HTMLInputElement | null>(null);
-
-  const perfumeTypes = [
-    "ADP",
-    "APP",
-    "ASB",
-    "ASL",
-    "B",
-    "BAR",
-    "BP",
-    "C",
-    "CA",
-    "CC",
-    "CP",
-    "D",
-    "E",
-    "EDC",
-    "EDF",
-    "EDP",
-    "EDPC",
-    "EDPE",
-    "EDPF",
-    "EDPI",
-    "EDPL",
-    "EDPP",
-    "EDPS",
-    "EDS",
-    "EDT",
-    "EDTC",
-    "EDTF",
-    "EDTI",
-    "EDTL",
-    "EDTS",
-    "EDTV",
-    "EE",
-    "EF",
-    "EP",
-    "ESP",
-    "EXP",
-    "EXT",
-    "F",
-    "FDP",
-    "GD",
-    "H",
-    "L",
-    "LAIT",
-    "LAR",
-    "P",
-    "PC",
-    "PDT",
-    "S",
-    "SEDT",
-    "T",
-    "V",
-    "XDP",
-  ];
+  const pagination = (
+    <Pagination page={page} totalPages={totalPages} pathname={pathname} params={filters} />
+  );
 
   return (
-    <main className="min-h-screen bg-transparent text-[var(--texte)]">
-      <Header />
-
-      {/* ESPACE HEADER */}
-      <div className="h-24" />
-
-      {/* TITRE */}
-      <section className="px-8 pt-8 pb-6">
-        <h1 className="text-5xl font-light">Gestion</h1>
-
-        <p className="mt-3 text-[var(--texte)]/60">
-          {perfumes.length} miniatures
-        </p>
-      </section>
-
-      {/* TABLEAU */}
-      <section className="px-8 pb-20 overflow-x-auto">
-        <div className="flex items-center gap-4 mb-6">
-          {/* PAGINATION */}
-          <button
-            onClick={() => setPage(Math.max(1, page - 1))}
-            className="w-14 h-14 cursor-pointer rounded-2xl bg-[var(--surface)] text-[var(--texte)] hover:bg-[var(--accent)] hover:text-[var(--texte)] transition-all duration-300 text-xl"
-          >
-            ←
-          </button>
-
-          <button
-            onClick={() => setPage(1)}
-            className={`w-14 h-14 cursor-pointer rounded-2xl transition-all duration-300 ${
-              page === 1
-                ? "bg-[var(--texte)] text-[var(--fond)]"
-                : "bg-[var(--surface)] text-[var(--texte)] hover:bg-[var(--accent)] hover:text-[var(--texte)]"
-            }`}
-          >
-            1
-          </button>
-
-          {page > 4 && <span className="opacity-50">...</span>}
-
-          {Array.from({ length: totalPages }, (_, i) => i + 1)
-            .filter(
-              (p) =>
-                p !== 1 && p !== totalPages && p >= page - 2 && p <= page + 2,
-            )
-            .map((p) => (
-              <button
-                key={p}
-                onClick={() => setPage(p)}
-                className={`w-14 h-14 cursor-pointer rounded-2xl transition-all duration-300 ${
-                  page === p
-                    ? "bg-[var(--texte)] text-[var(--fond)]"
-                    : "bg-[var(--surface)] text-[var(--texte)] hover:bg-[var(--accent)] hover:text-[var(--texte)]"
-                }`}
-              >
-                {p}
-              </button>
-            ))}
-
-          {page < totalPages - 3 && <span className="opacity-50">...</span>}
-
-          <button
-            onClick={() => setPage(totalPages)}
-            className={`w-14 h-14 cursor-pointer rounded-2xl transition-all duration-300 ${
-              page === totalPages
-                ? "bg-[var(--texte)] text-[var(--fond)]"
-                : "bg-[var(--surface)] text-[var(--texte)] hover:bg-[var(--accent)] hover:text-[var(--texte)]"
-            }`}
-          >
-            {totalPages}
-          </button>
-
-          <button
-            onClick={() => setPage(Math.min(totalPages, page + 1))}
-            className="w-14 h-14 cursor-pointer rounded-2xl bg-[var(--surface)] text-[var(--texte)] hover:bg-[var(--accent)] hover:text-[var(--texte)] transition-all duration-300 text-xl"
-          >
-            →
-          </button>
-
-          {/* DROITE */}
-          <div className="ml-auto flex gap-4">
-            {/* EXPORT */}
-            <button
-              onClick={() => {
-                window.open("/api/export-xlsx", "_blank");
-
-                toast.success("Téléchargement réussi ✨");
-              }}
-              className="px-6 h-14 rounded-2xl bg-[var(--texte)] text-[var(--fond)] hover:bg-[var(--accent)] hover:text-[var(--texte)] transition-all duration-300 cursor-pointer flex items-center gap-2"
-            >
-              Export XLSX
-            </button>
-
-            {/* IMPORT */}
-            <button
-              onClick={() => importInputRef.current?.click()}
-              className="px-6 h-14 rounded-2xl bg-[var(--texte)] text-[var(--fond)] hover:bg-[var(--accent)] hover:text-[var(--texte)] transition-all duration-300 cursor-pointer flex items-center gap-2"
-            >
-              Import XLSX
-            </button>
-
-            <input
-              type="file"
-              accept=".xlsx"
-              className="hidden"
-              ref={importInputRef}
-              onChange={async (e) => {
-                const file = e.target.files?.[0];
-
-                if (!file) return;
-
-                const formData = new FormData();
-
-                formData.append("file", file);
-
-                try {
-                  const response = await fetch("/api/import-xlsx", {
-                    method: "POST",
-
-                    body: formData,
-                  });
-
-                  const data = await response.json();
-
-                  if (data.success) {
-                    toast.success("Mise à jour réussie ✨");
-
-                    window.location.reload();
-                  } else {
-                    toast.error("Fichier XLSX invalide ❌");
-                  }
-                } catch {
-                  toast.error("Fichier XLSX invalide ❌");
-                }
-              }}
-            />
-
-            {/* AJOUT */}
-            <button
-              onClick={() => setOpenAdd(true)}
-              className="px-8 h-14 rounded-2xl bg-[var(--texte)] text-[var(--fond)] text-lg cursor-pointer transition-all hover:bg-[var(--accent)] hover:text-[var(--texte)] hover:scale-[1.02] active:scale-[0.98]"
-            >
-              Ajouter une Miniature
-            </button>
-          </div>
+    <div className="mx-auto max-w-screen-2xl px-4 pt-8 pb-16 md:px-8">
+      <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+        <div>
+          <h1 className="font-display text-5xl font-semibold italic">Gestion</h1>
+          <p className="mt-1 text-texte-doux">
+            {plural(total, "miniature")}
+            {FILTERS.some(({ key }) => filters[key]) && " correspondant à la recherche"}
+          </p>
         </div>
 
-        <div className="min-w-[1600px] rounded-3xl overflow-hidden border border-black/5 shadow-sm">
-          {/* HEADER */}
-          <div className="grid grid-cols-[200px_300px_300px_130px_150px_120px_300px_220px] bg-[var(--surface)] border-b border-black/5">
-            <div className="p-4 font-semibold border-r border-black/5 flex items-center justify-center">
-              Image
-            </div>
-
-            {/* PARFUM */}
-            <div className="p-4 font-semibold border-r border-black/5 flex items-center gap-4 justify-center">
-              <div className="font-semibold flex items-center">Parfum</div>
-
-              <input
-                value={searchParfum}
-                onChange={(e) => setSearchParfum(e.target.value)}
-                placeholder="Recherche..."
-                className="w-[140px] px-3 py-2 rounded-xl bg-[var(--fond)] border border-black/5 outline-none text-sm"
-              />
-            </div>
-
-            {/* PARFUMEUR */}
-            <div className="p-4 font-semibold border-r border-black/5 flex items-center gap-4 justify-center">
-              <div className="font-semibold flex items-center">Parfumeur</div>
-
-              <input
-                value={searchParfumeur}
-                onChange={(e) => setSearchParfumeur(e.target.value)}
-                placeholder="Recherche..."
-                className="w-[140px] px-3 py-2 rounded-xl bg-[var(--fond)] border border-black/5 outline-none text-sm"
-              />
-            </div>
-
-            <div className="p-4 font-semibold border-r border-black/5 flex items-center justify-center">
-              <div className="p-4 font-semibold flex items-center">Type</div>
-            </div>
-
-            <div className="p-4 font-semibold border-r border-black/5 flex items-center justify-center">
-              Boîte
-            </div>
-
-            <div className="p-4 font-semibold border-r border-black/5 flex items-center justify-center">
-              Contenance
-            </div>
-
-            <div className="p-4 font-semibold border-r border-black/5 flex items-center gap-4 justify-center">
-              <div className="font-semibold flex items-center">Description</div>
-
-              <input
-                value={searchDescription}
-                onChange={(e) => setSearchDescription(e.target.value)}
-                placeholder="Recherche..."
-                className="w-[140px] px-3 py-2 rounded-xl bg-[var(--fond)] border border-black/5 outline-none text-sm"
-              />
-            </div>
-            <div className="p-4 font-semibold flex items-center justify-center">
-              Actions
-            </div>
-          </div>
-
-          {/* LIGNES */}
-          {currentPerfumes.map((perfume, index) => (
-            <div
-              key={perfume.id}
-              className="grid grid-cols-[200px_300px_300px_130px_150px_120px_300px_220px] bg-[var(--fond)] border-b border-black/5 transition-all"
-            >
-              {/* IMAGE */}
-              <div className="p-3 flex items-center gap-3 border-r border-black/5">
-                <img
-                  src={
-                    perfume.image_file?.startsWith("http")
-                      ? perfume.image_file
-                      : `/images/${perfume.image_file}`
-                  }
-                  onClick={() => setPreviewImage(perfume.image_file)}
-                  className="w-20 h-20 object-cover rounded-xl border border-black/5 cursor-pointer hover:scale-105 transition-all"
-                />
-
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  ref={(el) => {
-                    fileInputRefs.current[perfume.id] = el;
-                  }}
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-
-                    if (!file) return;
-
-                    try {
-                      if (perfume.image_file?.includes("/storage/")) {
-                        const oldFile = perfume.image_file.split("/").pop();
-
-                        if (oldFile) {
-                          await supabase.storage
-                            .from("images")
-                            .remove([oldFile]);
-                        }
-                      }
-                      const imageBitmap = await createImageBitmap(file);
-
-                      const canvas = document.createElement("canvas");
-
-                      canvas.width = 640;
-                      canvas.height = 480;
-
-                      const ctx = canvas.getContext("2d");
-
-                      if (!ctx) {
-                        toast.error("Erreur canvas");
-                        return;
-                      }
-
-                      ctx.fillStyle = "#ffffff";
-                      ctx.fillRect(0, 0, 640, 480);
-
-                      const scale = Math.min(
-                        640 / imageBitmap.width,
-                        480 / imageBitmap.height,
-                      );
-
-                      const width = imageBitmap.width * scale;
-
-                      const height = imageBitmap.height * scale;
-
-                      const x = (640 - width) / 2;
-
-                      const y = (480 - height) / 2;
-
-                      ctx.drawImage(imageBitmap, x, y, width, height);
-
-                      const blob = await new Promise<Blob | null>((resolve) => {
-                        canvas.toBlob(resolve, "image/jpeg", 0.8);
-                      });
-
-                      if (!blob) {
-                        toast.error("Erreur image");
-                        return;
-                      }
-
-                      const filename = `${Date.now()}.jpg`;
-
-                      const optimizedFile = new File([blob], filename, {
-                        type: "image/jpeg",
-                      });
-
-                      const { error } = await supabase.storage
-                        .from("images")
-                        .upload(filename, optimizedFile);
-
-                      if (error) {
-                        console.log(error);
-
-                        toast.error("Erreur upload");
-
-                        return;
-                      }
-
-                      const { data: publicUrlData } = supabase.storage
-                        .from("images")
-                        .getPublicUrl(filename);
-
-                      const imageUrl = publicUrlData.publicUrl;
-
-                      const updated = [...perfumes];
-
-                      const realIndex = updated.findIndex(
-                        (p) => p.id === perfume.id,
-                      );
-
-                      updated[realIndex] = {
-                        ...perfume,
-
-                        image_file: imageUrl,
-                      };
-
-                      setPerfumes(updated);
-
-                      toast.success("Image uploadée ✨");
-                    } catch {
-                      toast.error("Erreur upload");
-                    }
-                  }}
-                />
-
-                <button
-                  onClick={() => fileInputRefs.current[perfume.id]?.click()}
-                  className="px-3 py-2 cursor-pointer rounded-xl bg-[var(--surface)] hover:bg-[var(--accent)] transition-all text-sm"
-                >
-                  Modifier
-                </button>
-              </div>
-
-              {/* PARFUM */}
-              <div className="p-4 flex items-center border-r border-black/5">
-                <input
-                  value={perfume.parfum}
-                  onFocus={() => setEditingId(perfume.id)}
-                  onChange={(e) => {
-                    const updated = [...perfumes];
-
-                    const realIndex = updated.findIndex(
-                      (p) => p.id === perfume.id,
-                    );
-
-                    updated[realIndex] = {
-                      ...perfume,
-
-                      parfum: e.target.value,
-                    };
-
-                    setPerfumes(updated);
-                  }}
-                  className="w-full px-3 py-2 rounded-xl bg-[var(--surface)] border border-transparent focus:border-[var(--accent)] outline-none transition-all"
-                />
-              </div>
-
-              {/* PARFUMEUR */}
-              <div className="p-4 flex items-center border-r border-black/5">
-                <input
-                  value={perfume.parfumeur}
-                  onFocus={() => setEditingId(perfume.id)}
-                  onChange={(e) => {
-                    const updated = [...perfumes];
-
-                    const realIndex = updated.findIndex(
-                      (p) => p.id === perfume.id,
-                    );
-
-                    updated[realIndex] = {
-                      ...perfume,
-
-                      parfumeur: e.target.value,
-                    };
-
-                    setPerfumes(updated);
-                  }}
-                  className="w-full px-3 py-2 rounded-xl bg-[var(--surface)] border border-transparent focus:border-[var(--accent)] outline-none transition-all"
-                />
-              </div>
-
-              {/* TYPE */}
-              <div className="p-4 flex items-center border-r border-black/5">
-                <select
-                  value={perfume.type || ""}
-                  onFocus={() => setEditingId(perfume.id)}
-                  onChange={(e) => {
-                    const updated = [...perfumes];
-
-                    const realIndex = updated.findIndex(
-                      (p) => p.id === perfume.id,
-                    );
-
-                    updated[realIndex] = {
-                      ...perfume,
-                      type: e.target.value,
-                    };
-
-                    setPerfumes(updated);
-                  }}
-                  className="w-full px-3 py-2 rounded-xl bg-[var(--surface)] border border-transparent focus:border-[var(--accent)] outline-none transition-all cursor-pointer"
-                >
-                  {perfumeTypes.map((perfumeType) => (
-                    <option key={perfumeType} value={perfumeType}>
-                      {perfumeType}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* BOITE */}
-              <div className="p-4 flex items-center border-r border-black/5">
-                <div className="flex bg-[var(--surface)] rounded-xl p-1 gap-1">
-                  <button
-                    onClick={() => {
-                      const updated = [...perfumes];
-
-                      const realIndex = updated.findIndex(
-                        (p) => p.id === perfume.id,
-                      );
-
-                      updated[realIndex] = {
-                        ...perfume,
-
-                        boite: "Oui",
-                      };
-
-                      setPerfumes(updated);
-                    }}
-                    className={`px-4 py-2 rounded-lg text-sm transition-all cursor-pointer ${
-                      perfume.boite === "Oui"
-                        ? "bg-[var(--texte)] text-[var(--fond)]"
-                        : "hover:bg-black/5"
-                    }`}
-                  >
-                    Oui
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      const updated = [...perfumes];
-
-                      const realIndex = updated.findIndex(
-                        (p) => p.id === perfume.id,
-                      );
-
-                      updated[realIndex] = {
-                        ...perfume,
-
-                        boite: "Non",
-                      };
-
-                      setPerfumes(updated);
-                    }}
-                    className={`px-4 py-2 rounded-lg text-sm transition-all cursor-pointer ${
-                      perfume.boite === "Non"
-                        ? "bg-[var(--texte)] text-[var(--fond)]"
-                        : "hover:bg-black/5"
-                    }`}
-                  >
-                    Non
-                  </button>
-                </div>
-              </div>
-
-              {/* CONTENANCE */}
-              <div className="p-4 flex items-center border-r border-black/5">
-                <input
-                  value={perfume.contenance}
-                  onFocus={() => setEditingId(perfume.id)}
-                  onChange={(e) => {
-                    const updated = [...perfumes];
-
-                    const realIndex = updated.findIndex(
-                      (p) => p.id === perfume.id,
-                    );
-
-                    updated[realIndex] = {
-                      ...perfume,
-
-                      contenance: e.target.value,
-                    };
-
-                    setPerfumes(updated);
-                  }}
-                  className="w-full px-3 py-2 rounded-xl bg-[var(--surface)] border border-transparent focus:border-[var(--accent)] outline-none transition-all"
-                />
-              </div>
-
-              {/* DESCRIPTION */}
-              <div className="p-4 flex items-center border-r border-black/5">
-                <input
-                  value={perfume.description || ""}
-                  onFocus={() => setEditingId(perfume.id)}
-                  onChange={(e) => {
-                    const updated = [...perfumes];
-
-                    const realIndex = updated.findIndex(
-                      (p) => p.id === perfume.id,
-                    );
-
-                    updated[realIndex] = {
-                      ...perfume,
-                      description: e.target.value,
-                    };
-
-                    setPerfumes(updated);
-                  }}
-                  placeholder="Description..."
-                  className="w-full px-3 py-2 rounded-xl bg-[var(--surface)] border border-transparent focus:border-[var(--accent)] outline-none transition-all"
-                />
-              </div>
-
-              <div className="p-4 flex items-center gap-3">
-                {/* SAVE */}
-                <button
-                  onClick={async () => {
-                    try {
-                      const { error } = await supabase
-                        .from("perfumes")
-                        .update({
-                          parfum: perfume.parfum,
-
-                          parfumeur: perfume.parfumeur,
-
-                          boite: perfume.boite,
-
-                          type: perfume.type,
-
-                          contenance: perfume.contenance,
-
-                          description: perfume.description,
-
-                          image_file: perfume.image_file,
-                        })
-                        .eq("id", perfume.id);
-
-                      if (!error) {
-                        setEditingId(null);
-
-                        toast.success("Sauvegarde réussie ✨");
-                      } else {
-                        toast.error("Erreur sauvegarde");
-                      }
-                    } catch {
-                      toast.error("Erreur sauvegarde");
-                    }
-                  }}
-                  className="px-5 cursor-pointer py-2 rounded-xl bg-[var(--texte)] text-[var(--fond)] hover:bg-[var(--accent)] hover:text-[var(--texte)] transition-all"
-                >
-                  Sauvegarder
-                </button>
-
-                {/* DELETE */}
-                <button
-                  onClick={() => {
-                    setDeleteMiniature(perfume);
-                  }}
-                  className="px-4 py-2 cursor-pointer rounded-xl bg-red-500 text-white hover:opacity-80 transition-all"
-                >
-                  Supprimer
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="py-4 flex items-center gap-4">
-          {/* PAGINATION */}
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
           <button
-            onClick={() => setPage(Math.max(1, page - 1))}
-            className="w-14 h-14 cursor-pointer rounded-2xl bg-[var(--surface)] hover:bg-[var(--accent)] transition-all text-xl"
+            type="button"
+            onClick={() => setAdding(true)}
+            className="btn btn-primary col-span-2"
           >
-            ←
+            <Plus aria-hidden size={18} />
+            Ajouter une miniature
           </button>
-
+          <a href="/api/export-xlsx" download className="btn btn-secondary">
+            <Download aria-hidden size={18} />
+            Exporter
+          </a>
           <button
-            onClick={() => setPage(1)}
-            className={`w-14 h-14 cursor-pointer rounded-2xl transition-all ${
-              page === 1
-                ? "bg-[var(--texte)] text-[var(--fond)]"
-                : "bg-[var(--surface)] hover:bg-[var(--accent)]"
-            }`}
+            type="button"
+            onClick={() => importInput.current?.click()}
+            disabled={importing}
+            className="btn btn-secondary"
           >
-            1
+            {importing ? (
+              <LoaderCircle aria-hidden size={18} className="animate-spin" />
+            ) : (
+              <Upload aria-hidden size={18} />
+            )}
+            Importer
           </button>
-
-          {page > 4 && <span className="opacity-50">...</span>}
-
-          {Array.from({ length: totalPages }, (_, i) => i + 1)
-            .filter(
-              (p) =>
-                p !== 1 && p !== totalPages && p >= page - 2 && p <= page + 2,
-            )
-            .map((p) => (
-              <button
-                key={p}
-                onClick={() => setPage(p)}
-                className={`w-14 h-14 cursor-pointer rounded-2xl transition-all ${
-                  page === p
-                    ? "bg-[var(--texte)] text-[var(--fond)]"
-                    : "bg-[var(--surface)] hover:bg-[var(--accent)]"
-                }`}
-              >
-                {p}
-              </button>
-            ))}
-
-          {page < totalPages - 3 && <span className="opacity-50">...</span>}
-
-          <button
-            onClick={() => setPage(totalPages)}
-            className={`w-14 h-14 cursor-pointer rounded-2xl transition-all ${
-              page === totalPages
-                ? "bg-[var(--texte)] text-[var(--fond)]"
-                : "bg-[var(--surface)] hover:bg-[var(--accent)]"
-            }`}
-          >
-            {totalPages}
-          </button>
-
-          <button
-            onClick={() => setPage(Math.min(totalPages, page + 1))}
-            className="w-14 h-14 cursor-pointer rounded-2xl bg-[var(--surface)] hover:bg-[var(--accent)] transition-all text-xl"
-          >
-            →
-          </button>
-        </div>
-      </section>
-
-      {/* MODAL AJOUT */}
-      {openAdd && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-          <div className="w-full max-w-2xl rounded-[32px] bg-[var(--surface)] p-8 shadow-2xl">
-            <h2 className="text-4xl font-light mb-8">Ajouter une miniature</h2>
-
-            {/* IMAGE */}
-            <div className="mb-6">
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                ref={addImageInputRef}
-                onChange={async (e) => {
-                  const file = e.target.files?.[0];
-
-                  if (!file) return;
-
-                  try {
-                    const imageBitmap = await createImageBitmap(file);
-
-                    const canvas = document.createElement("canvas");
-
-                    canvas.width = 640;
-                    canvas.height = 480;
-
-                    const ctx = canvas.getContext("2d");
-
-                    if (!ctx) {
-                      toast.error("Erreur canvas");
-                      return;
-                    }
-
-                    ctx.fillStyle = "#ffffff";
-                    ctx.fillRect(0, 0, 640, 480);
-
-                    const scale = Math.min(
-                      640 / imageBitmap.width,
-                      480 / imageBitmap.height,
-                    );
-
-                    const width = imageBitmap.width * scale;
-
-                    const height = imageBitmap.height * scale;
-
-                    const x = (640 - width) / 2;
-
-                    const y = (480 - height) / 2;
-
-                    ctx.drawImage(imageBitmap, x, y, width, height);
-
-                    const blob = await new Promise<Blob | null>((resolve) => {
-                      canvas.toBlob(resolve, "image/jpeg", 0.8);
-                    });
-
-                    if (!blob) {
-                      toast.error("Erreur image");
-                      return;
-                    }
-
-                    const filename = `${Date.now()}.jpg`;
-
-                    const optimizedFile = new File([blob], filename, {
-                      type: "image/jpeg",
-                    });
-
-                    const { error } = await supabase.storage
-                      .from("images")
-                      .upload(filename, optimizedFile);
-
-                    if (error) {
-                      console.log(error);
-
-                      toast.error("Erreur upload");
-
-                      return;
-                    }
-
-                    const { data: publicUrlData } = supabase.storage
-                      .from("images")
-                      .getPublicUrl(filename);
-
-                    setNewImage(publicUrlData.publicUrl);
-
-                    toast.success("Image uploadée ✨");
-                  } catch {
-                    toast.error("Erreur upload");
-                  }
-                }}
-              />
-
-              <button
-                onClick={() => addImageInputRef.current?.click()}
-                className="px-5 py-3 cursor-pointer rounded-2xl bg-[var(--texte)] text-[var(--fond)] hover:bg-[var(--accent)] hover:text-[var(--texte)] transition-all"
-              >
-                {newImage ? "Changer image" : "Ajouter image"}
-              </button>
-            </div>
-
-            {/* CHAMPS */}
-            <div className="grid grid-cols-2 gap-4">
-              <input
-                value={newParfum}
-                onChange={(e) => setNewParfum(e.target.value)}
-                placeholder="Parfum"
-                className="p-4 rounded-2xl bg-[var(--fond)] border border-black/5 outline-none"
-              />
-
-              <input
-                value={newParfumeur}
-                onChange={(e) => setNewParfumeur(e.target.value)}
-                placeholder="Parfumeur"
-                className="p-4 rounded-2xl bg-[var(--fond)] border border-black/5 outline-none"
-              />
-            </div>
-            <div className="grid grid-cols-3 gap-4 mt-4">
-              {/* BOITE */}
-              <div className="flex items-center gap-3 h-14 px-4 rounded-2xl bg-[var(--fond)]">
-                <p className="text-sm shrink-0">Boîte :</p>
-
-                <div className="flex gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setNewBoite("Oui")}
-                    className={`px-4 h-10 rounded-xl text-sm transition-all cursor-pointer ${
-                      newBoite === "Oui"
-                        ? "bg-[var(--texte)] text-[var(--fond)]"
-                        : "hover:bg-black/5"
-                    }`}
-                  >
-                    Oui
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setNewBoite("Non")}
-                    className={`px-4 h-10 rounded-xl text-sm transition-all cursor-pointer ${
-                      newBoite === "Non"
-                        ? "bg-[var(--texte)] text-[var(--fond)]"
-                        : "hover:bg-black/5"
-                    }`}
-                  >
-                    Non
-                  </button>
-                </div>
-              </div>
-
-              {/* TYPE */}
-              <select
-                value={newType}
-                onChange={(e) => setNewType(e.target.value)}
-                className="h-14 px-5 rounded-2xl bg-[var(--fond)] outline-none cursor-pointer w-full"
-              >
-                <option value="">Type</option>
-
-                {perfumeTypes.map((perfumeType) => (
-                  <option key={perfumeType} value={perfumeType}>
-                    {perfumeType}
-                  </option>
-                ))}
-              </select>
-
-              {/* CONTENANCE */}
-              <input
-                value={newContenance}
-                onChange={(e) => setNewContenance(e.target.value)}
-                placeholder="Contenance"
-                className="h-14 px-5 rounded-2xl bg-[var(--fond)] outline-none w-full"
-              />
-            </div>
-
-            <input
-              value={newDescription}
-              onChange={(e) => setNewDescription(e.target.value)}
-              placeholder="Description"
-              className="w-full mt-4 min-h-[120px] p-5 rounded-2xl bg-[var(--fond)] outline-none resize-none"
-            />
-
-            {/* ACTIONS */}
-            <div className="flex justify-end gap-4 mt-8">
-              <button
-                onClick={() => {
-                  setOpenAdd(false);
-
-                  setNewParfum("");
-
-                  setNewParfumeur("");
-
-                  setNewBoite("");
-
-                  setNewType("");
-
-                  setNewContenance("");
-
-                  setNewImage("");
-                }}
-                className="px-6 py-3 rounded-2xl cursor-pointer bg-[var(--texte)] text-[var(--fond)] hover:bg-[var(--accent)] hover:text-[var(--texte)] transition-all duration-300"
-              >
-                Annuler
-              </button>
-
-              <button
-                onClick={async () => {
-                  try {
-                    const newId = Math.max(...perfumes.map((p) => p.id)) + 1;
-
-                    const { data, error } = await supabase
-                      .from("perfumes")
-                      .insert([
-                        {
-                          id: newId,
-
-                          parfum: newParfum,
-
-                          parfumeur: newParfumeur,
-
-                          boite: newBoite,
-
-                          type: newType,
-
-                          contenance: newContenance,
-
-                          description: newDescription,
-
-                          image_file: newImage,
-                        },
-                      ])
-                      .select()
-                      .single();
-
-                    if (!error && data) {
-                      setPerfumes([data, ...perfumes]);
-
-                      toast.success("Miniature ajoutée ✨");
-
-                      setOpenAdd(false);
-
-                      setNewParfum("");
-
-                      setNewParfumeur("");
-
-                      setNewBoite("");
-
-                      setNewType("");
-
-                      setNewContenance("");
-
-                      setNewDescription("");
-
-                      setNewImage("");
-                    } else {
-                      toast.error("Erreur ajout");
-                    }
-                  } catch {
-                    toast.error("Erreur ajout");
-                  }
-                }}
-                className="px-6 py-3 rounded-2xl cursor-pointer bg-[var(--texte)] text-[var(--fond)] hover:bg-[var(--accent)] hover:text-[var(--texte)] transition-all"
-              >
-                Sauvegarder
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      {/* MODAL DELETE */}
-      {deleteMiniature && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-          <div className="w-full max-w-md rounded-[32px] bg-[var(--surface)] p-8 shadow-2xl">
-            <h2 className="text-3xl font-light text-center mb-10">
-              Confirmer la suppression
-            </h2>
-
-            <div className="flex justify-center gap-4">
-              {/* ANNULER */}
-              <button
-                onClick={() => setDeleteMiniature(null)}
-                className="px-6 py-3 cursor-pointer rounded-2xl bg-[var(--texte)] text-[var(--fond)] hover:bg-[var(--accent)] hover:text-[var(--texte)] transition-all duration-300"
-              >
-                Annuler
-              </button>
-
-              {/* DELETE */}
-              <button
-                onClick={async () => {
-                  try {
-                    if (deleteMiniature.image_file?.includes("/storage/")) {
-                      const oldFile = deleteMiniature.image_file
-                        .split("/")
-                        .pop();
-
-                      if (oldFile) {
-                        await supabase.storage.from("images").remove([oldFile]);
-                      }
-                    }
-                    const { error } = await supabase
-                      .from("perfumes")
-                      .delete()
-                      .eq("id", deleteMiniature.id);
-
-                    if (!error) {
-                      setPerfumes(
-                        perfumes.filter((p) => p.id !== deleteMiniature.id),
-                      );
-
-                      setDeleteMiniature(null);
-
-                      toast.success("Miniature supprimée 🗑️");
-                    } else {
-                      toast.error("Erreur suppression");
-                    }
-                  } catch {
-                    toast.error("Erreur suppression");
-                  }
-                }}
-                className="px-6 py-3 cursor-pointer rounded-2xl bg-red-500 text-white hover:opacity-80 transition-all"
-              >
-                Supprimer
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      {/* PREVIEW IMAGE */}
-      {previewImage && (
-        <div
-          onClick={() => setPreviewImage("")}
-          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-8"
-        >
-          <img
-            src={
-              previewImage?.startsWith("http")
-                ? previewImage
-                : `/images/${previewImage}`
-            }
-            className="max-w-[90vw] max-h-[90vh] rounded-3xl shadow-2xl object-contain"
+          <input
+            ref={importInput}
+            type="file"
+            accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            hidden
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              event.target.value = "";
+              if (file) runImport(file, "preview");
+            }}
           />
         </div>
+      </div>
+
+      <div role="search" className="panel mt-6 grid gap-2 p-3 sm:grid-cols-3 sm:gap-3 sm:p-4">
+        {FILTERS.map(({ key, label }) => (
+          <div key={key}>
+            <label htmlFor={`filtre-${key}`} className="label max-sm:sr-only">
+              {label}
+            </label>
+            <input
+              id={`filtre-${key}`}
+              type="search"
+              value={search[key]}
+              onChange={(event) =>
+                setSearch((current) => ({ ...current, [key]: event.target.value }))
+              }
+              placeholder={`${label}…`}
+              className="field"
+            />
+          </div>
+        ))}
+      </div>
+
+      {pagination}
+
+      <div
+        className={`panel mt-6 overflow-hidden transition-opacity ${searching ? "opacity-60" : ""}`}
+      >
+        <div
+          aria-hidden
+          className={`${ROW_GRID} hidden border-b border-texte/10 bg-surface/60 px-4 py-3 text-xs font-semibold tracking-wider text-texte-doux uppercase`}
+        >
+          <span>Photo</span>
+          <span>Parfum</span>
+          <span>Parfumeur</span>
+          <span>Type</span>
+          <span>Boîte</span>
+          <span>Contenance</span>
+          <span>Description</span>
+          <span>Actions</span>
+        </div>
+
+        {perfumes.length > 0 ? (
+          <ul>
+            {perfumes.map((perfume) => (
+              // La clé suit le contenu : une ligne se réinitialise si la fiche change côté serveur.
+              <GestionRow
+                key={JSON.stringify(perfume)}
+                perfume={perfume}
+                onDelete={setToDelete}
+                onPreview={setPreview}
+              />
+            ))}
+          </ul>
+        ) : (
+          <p className="p-10 text-center text-texte-doux">
+            Aucune miniature ne correspond à la recherche.
+          </p>
+        )}
+      </div>
+
+      {pagination}
+
+      <datalist id="liste-parfumeurs">
+        {parfumeurs.map((name) => (
+          <option key={name} value={name} />
+        ))}
+      </datalist>
+
+      <Dialog
+        open={adding}
+        onClose={() => setAdding(false)}
+        title="Ajouter une miniature"
+        className="max-w-2xl"
+      >
+        <PerfumeForm
+          parfumeurs={parfumeurs}
+          onDone={() => setAdding(false)}
+          onCancel={() => setAdding(false)}
+        />
+      </Dialog>
+
+      <Dialog
+        open={toDelete !== null}
+        onClose={() => setToDelete(null)}
+        title="Supprimer cette miniature ?"
+      >
+        {toDelete && (
+          <>
+            <p className="text-texte-doux">
+              « {toDelete.parfum} » de {toDelete.parfumeur} sera définitivement retirée de la
+              collection.
+            </p>
+            <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button type="button" onClick={() => setToDelete(null)} className="btn btn-secondary">
+                Annuler
+              </button>
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={() =>
+                  startDelete(async () => {
+                    const result = await deletePerfume(toDelete.id);
+                    if (!result.ok) {
+                      toast.error(result.error);
+                      return;
+                    }
+                    toast.success("Miniature supprimée");
+                    setToDelete(null);
+                  })
+                }
+                className="btn btn-danger"
+              >
+                {deleting ? "Suppression…" : "Supprimer"}
+              </button>
+            </div>
+          </>
+        )}
+      </Dialog>
+
+      <Dialog
+        open={importSummary !== null}
+        onClose={() => {
+          setImportSummary(null);
+          setImportFile(null);
+        }}
+        title="Importer ce fichier ?"
+      >
+        {importSummary && (
+          <ImportPreview
+            summary={importSummary}
+            pending={importing}
+            onCancel={() => {
+              setImportSummary(null);
+              setImportFile(null);
+            }}
+            onConfirm={() => {
+              if (importFile) runImport(importFile, "apply");
+              setImportSummary(null);
+            }}
+          />
+        )}
+      </Dialog>
+
+      <Dialog
+        open={preview !== null}
+        onClose={() => setPreview(null)}
+        title="Photo"
+        className="max-w-3xl"
+      >
+        {preview && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={preview} alt="" className="w-full rounded-2xl bg-white object-contain" />
+        )}
+      </Dialog>
+    </div>
+  );
+}
+
+function ImportPreview({
+  summary,
+  pending,
+  onCancel,
+  onConfirm,
+}: {
+  summary: ImportSummary;
+  pending: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const nothingToDo = summary.added + summary.changed + summary.removed === 0;
+
+  return (
+    <>
+      <p className="text-texte-doux">
+        Le fichier contient {plural(summary.total, "ligne")}. Rien n&apos;est encore modifié.
+      </p>
+      <ul className="mt-5 grid grid-cols-3 gap-2 text-center">
+        {[
+          ["Ajouts", summary.added],
+          ["Modifications", summary.changed],
+          ["Suppressions", summary.removed],
+        ].map(([label, value]) => (
+          <li key={label} className="rounded-2xl bg-fond p-3">
+            <p className="text-2xl font-semibold tabular-nums">{formatCount(Number(value))}</p>
+            <p className="text-xs text-texte-doux">{label}</p>
+          </li>
+        ))}
+      </ul>
+
+      {summary.removed > 0 && (
+        <p role="alert" className="mt-5 rounded-2xl bg-red-700/10 p-4 text-sm text-red-900">
+          {plural(summary.removed, "miniature")} absente{summary.removed > 1 ? "s" : ""} du fichier{" "}
+          {summary.removed > 1 ? "seront supprimées" : "sera supprimée"} de la collection.
+        </p>
       )}
-      <Footer />
-    </main>
+
+      <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+        <button type="button" onClick={onCancel} className="btn btn-secondary">
+          {nothingToDo ? "Fermer" : "Annuler"}
+        </button>
+        {!nothingToDo && (
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={pending}
+            className={`btn ${summary.removed > 0 ? "btn-danger" : "btn-primary"}`}
+          >
+            Appliquer l&apos;import
+          </button>
+        )}
+      </div>
+    </>
   );
 }
